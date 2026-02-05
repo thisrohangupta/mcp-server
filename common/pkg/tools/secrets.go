@@ -2,13 +2,13 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	config "github.com/harness/mcp-server/common"
 	"github.com/harness/mcp-server/common/client"
 	"github.com/harness/mcp-server/common/client/dto"
 	"github.com/harness/mcp-server/common/pkg/common"
+	"github.com/harness/mcp-server/common/pkg/schemas"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -22,16 +22,19 @@ func GetSecretTool(config *config.McpServerConfig, client *client.SecretsClient)
 				mcp.Description("Identifier of the secret to retrieve"),
 			),
 			common.WithScope(config, false),
+			mcp.WithOutputSchema[schemas.SecretOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			secretIdentifier, err := RequiredParam[string](request, "secret_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("secret_identifier"), nil
 			}
 
 			// Call the client to get the secret
@@ -40,12 +43,7 @@ func GetSecretTool(config *config.McpServerConfig, client *client.SecretsClient)
 				return nil, fmt.Errorf("failed to get secret: %w", err)
 			}
 
-			r, err := json.Marshal(response)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal secret response: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(response)
 		}
 }
 
@@ -102,23 +100,26 @@ func ListSecretsTool(config *config.McpServerConfig, client *client.SecretsClien
 			),
 			common.WithScope(config, false),
 			WithPagination(),
+			mcp.WithOutputSchema[schemas.SecretListOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			// Get pagination parameters
 			page, size, err := FetchPagination(request)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("page/size", err.Error()), nil
 			}
 
 			// Get filter parameters
 			secretIds, err := OptionalAnyArrayParam(request, "secret")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("secret", err.Error()), nil
 			}
 			// Convert []any to []string
 			secretIdsStr := make([]string, 0, len(secretIds))
@@ -130,7 +131,7 @@ func ListSecretsTool(config *config.McpServerConfig, client *client.SecretsClien
 
 			secretTypes, err := OptionalAnyArrayParam(request, "type")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("type", err.Error()), nil
 			}
 			// Convert []any to []string
 			secretTypesStr := make([]string, 0, len(secretTypes))
@@ -142,22 +143,21 @@ func ListSecretsTool(config *config.McpServerConfig, client *client.SecretsClien
 
 			recursive, err := OptionalParam[bool](request, "recursive")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("recursive", err.Error()), nil
 			}
 
 			searchTerm, err := OptionalParam[string](request, "search_term")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("search_term", err.Error()), nil
 			}
 
 			// Temporarily removing sort orders due to API compatibility issues
-			// We'll revisit this once we have more information about the expected format
 			sortOrders := []string{}
 
 			// Get filter_type parameter
 			filterType, err := OptionalParam[string](request, "filter_type")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("filter_type", err.Error()), nil
 			}
 
 			// Create filter properties
@@ -179,11 +179,6 @@ func ListSecretsTool(config *config.McpServerConfig, client *client.SecretsClien
 				return nil, fmt.Errorf("failed to list secrets: %w", err)
 			}
 
-			r, err := json.Marshal(response)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal list secrets response: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(response)
 		}
 }

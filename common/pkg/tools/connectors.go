@@ -11,6 +11,7 @@ import (
 	clientdto "github.com/harness/mcp-server/common/client/dto"
 	"github.com/harness/mcp-server/common/pkg/common"
 	pkgdto "github.com/harness/mcp-server/common/pkg/dto"
+	"github.com/harness/mcp-server/common/pkg/schemas"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -34,11 +35,14 @@ func ListConnectorCatalogueTool(harnessConfig *config.McpServerConfig, connector
 	return mcp.NewTool("list_connector_catalogue",
 			mcp.WithDescription("List the Harness connector catalogue."),
 			common.WithScope(harnessConfig, false),
+			mcp.WithOutputSchema[schemas.ConnectorCatalogueOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			scope, err := common.FetchScope(ctx, harnessConfig, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			catalogue, err := connectorService.ListConnectorCatalogue(ctx, scope)
@@ -46,12 +50,7 @@ func ListConnectorCatalogueTool(harnessConfig *config.McpServerConfig, connector
 				return nil, fmt.Errorf("failed to list connector catalogue: %w", err)
 			}
 
-			responseBytes, err := json.Marshal(catalogue)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal connector catalogue: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(responseBytes)), nil
+			return schemas.NewStructuredResult(catalogue)
 		}
 }
 
@@ -65,16 +64,19 @@ func GetConnectorDetailsTool(config *config.McpServerConfig, connectorService *c
 				mcp.Description("The identifier of the connector"),
 			),
 			common.WithScope(config, false),
+			mcp.WithOutputSchema[schemas.ConnectorOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			connectorIdentifier, err := RequiredParam[string](request, "connector_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("connector_identifier"), nil
 			}
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			data, err := connectorService.GetConnector(ctx, scope, connectorIdentifier)
@@ -96,12 +98,7 @@ func GetConnectorDetailsTool(config *config.McpServerConfig, connectorService *c
 
 			// Convert to human-readable time fields
 			response := clientdto.ToConnectorDetail(clientDetail)
-			r, err := json.Marshal(response)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal connector: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(response)
 		}
 }
 
@@ -142,52 +139,55 @@ func ListConnectorsTool(config *config.McpServerConfig, connectorService *client
 				mcp.Description("JSON object of tags to filter by (e.g., {\"env\":\"prod\"})"),
 			),
 			common.WithScope(config, false),
+			mcp.WithOutputSchema[schemas.ConnectorListOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			// Parse optional parameters
 			namesStr, err := OptionalParam[string](request, "connector_names")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("connector_names", err.Error()), nil
 			}
 			connectorNames := parseStringSlice(namesStr)
 
 			idsStr, err := OptionalParam[string](request, "connector_identifiers")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("connector_identifiers", err.Error()), nil
 			}
 			connectorIdentifiers := parseStringSlice(idsStr)
 
 			description, err := OptionalParam[string](request, "description")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("description", err.Error()), nil
 			}
 
 			typesStr, err := OptionalParam[string](request, "types")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("types", err.Error()), nil
 			}
 			types := parseStringSlice(typesStr)
 
 			categoriesStr, err := OptionalParam[string](request, "categories")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("categories", err.Error()), nil
 			}
 			categories := parseStringSlice(categoriesStr)
 
 			connStatStr, err := OptionalParam[string](request, "connectivity_statuses")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("connectivity_statuses", err.Error()), nil
 			}
 			connectivityStatuses := parseStringSlice(connStatStr)
 
 			connModesStr, err := OptionalParam[string](request, "connector_connectivity_modes")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("connector_connectivity_modes", err.Error()), nil
 			}
 			connectorConnectivityModes := parseStringSlice(connModesStr)
 
@@ -201,11 +201,11 @@ func ListConnectorsTool(config *config.McpServerConfig, connectorService *client
 			var tags map[string]string
 			tagsStr, err := OptionalParam[string](request, "tags")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("tags", err.Error()), nil
 			}
 			if tagsStr != "" {
 				if err := json.Unmarshal([]byte(tagsStr), &tags); err != nil {
-					return mcp.NewToolResultError(fmt.Sprintf("invalid tags JSON: %v", err)), nil
+					return schemas.NewInvalidParamError("tags", fmt.Sprintf("invalid JSON: %v", err)), nil
 				}
 			}
 
@@ -228,12 +228,7 @@ func ListConnectorsTool(config *config.McpServerConfig, connectorService *client
 
 			// Convert to human-readable time fields
 			response := clientdto.ToConnectorListData(clientList)
-			r, err := json.Marshal(response)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal connectors: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(response)
 		}
 }
 

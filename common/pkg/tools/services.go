@@ -2,13 +2,13 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	config "github.com/harness/mcp-server/common"
 	"github.com/harness/mcp-server/common/client"
 	"github.com/harness/mcp-server/common/client/dto"
 	"github.com/harness/mcp-server/common/pkg/common"
+	"github.com/harness/mcp-server/common/pkg/schemas"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -23,16 +23,19 @@ func GetServiceTool(config *config.McpServerConfig, client *client.ServiceClient
 				mcp.Description("The identifier of the service"),
 			),
 			common.WithScope(config, false),
+			mcp.WithOutputSchema[schemas.ServiceOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			serviceIdentifier, err := RequiredParam[string](request, "service_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("service_identifier"), nil
 			}
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			data, err := client.Get(ctx, scope, serviceIdentifier)
@@ -40,12 +43,7 @@ func GetServiceTool(config *config.McpServerConfig, client *client.ServiceClient
 				return nil, fmt.Errorf("failed to get service: %w", err)
 			}
 
-			r, err := json.Marshal(data)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal service: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(data)
 		}
 }
 
@@ -58,7 +56,8 @@ func ListServicesTool(config *config.McpServerConfig, client *client.ServiceClie
 				mcp.Description("Optional field to sort by (e.g., name)"),
 			),
 			mcp.WithString("order",
-				mcp.Description("Optional sort order (asc or desc)"),
+				mcp.Description("Optional sort order"),
+				mcp.Enum("asc", "desc"),
 			),
 			mcp.WithNumber("page",
 				mcp.DefaultNumber(0),
@@ -70,11 +69,14 @@ func ListServicesTool(config *config.McpServerConfig, client *client.ServiceClie
 				mcp.Description("Number of services per page"),
 			),
 			common.WithScope(config, false),
+			mcp.WithOutputSchema[schemas.ServiceListOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			opts := &dto.ServiceOptions{}
@@ -82,7 +84,7 @@ func ListServicesTool(config *config.McpServerConfig, client *client.ServiceClie
 			// Handle pagination
 			page, err := OptionalParam[float64](request, "page")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("page", err.Error()), nil
 			}
 			if page >= 0 {
 				opts.Page = int(page)
@@ -90,7 +92,7 @@ func ListServicesTool(config *config.McpServerConfig, client *client.ServiceClie
 
 			limit, err := OptionalParam[float64](request, "limit")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("limit", err.Error()), nil
 			}
 			if limit > 0 {
 				opts.Limit = int(limit)
@@ -99,7 +101,7 @@ func ListServicesTool(config *config.McpServerConfig, client *client.ServiceClie
 			// Handle other optional parameters
 			sort, err := OptionalParam[string](request, "sort")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("sort", err.Error()), nil
 			}
 			if sort != "" {
 				opts.Sort = sort
@@ -107,7 +109,7 @@ func ListServicesTool(config *config.McpServerConfig, client *client.ServiceClie
 
 			order, err := OptionalParam[string](request, "order")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("order", err.Error()), nil
 			}
 			if order != "" {
 				opts.Order = order
@@ -118,19 +120,18 @@ func ListServicesTool(config *config.McpServerConfig, client *client.ServiceClie
 				return nil, fmt.Errorf("failed to list services: %w", err)
 			}
 
-			// Create response with services and metadata
-			response := map[string]interface{}{
-				"services":   services,
-				"totalCount": totalCount,
-				"pageSize":   opts.Limit,
-				"pageNumber": opts.Page,
+			// Transform to structured output
+			items := make([]schemas.ServiceListItem, 0, len(services))
+			for _, s := range services {
+				items = append(items, schemas.ServiceListItem{
+					Identifier:  s.Identifier,
+					Name:        s.Name,
+					Description: s.Description,
+					Tags:        s.Tags,
+				})
 			}
 
-			r, err := json.Marshal(response)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal service list: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			output := schemas.NewPaginatedResult(items, opts.Page, opts.Limit, totalCount)
+			return schemas.NewStructuredResult(output)
 		}
 }

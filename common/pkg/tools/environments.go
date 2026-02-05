@@ -2,13 +2,13 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	config "github.com/harness/mcp-server/common"
 	"github.com/harness/mcp-server/common/client"
 	"github.com/harness/mcp-server/common/client/dto"
 	"github.com/harness/mcp-server/common/pkg/common"
+	"github.com/harness/mcp-server/common/pkg/schemas"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -23,16 +23,19 @@ func GetEnvironmentTool(config *config.McpServerConfig, client *client.Environme
 				mcp.Description("The identifier of the environment"),
 			),
 			common.WithScope(config, false),
+			mcp.WithOutputSchema[schemas.EnvironmentOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			environmentIdentifier, err := RequiredParam[string](request, "environment_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("environment_identifier"), nil
 			}
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			data, err := client.Get(ctx, scope, environmentIdentifier)
@@ -40,12 +43,7 @@ func GetEnvironmentTool(config *config.McpServerConfig, client *client.Environme
 				return nil, fmt.Errorf("failed to get environment: %w", err)
 			}
 
-			r, err := json.Marshal(data)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal environment: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(data)
 		}
 }
 
@@ -58,7 +56,8 @@ func ListEnvironmentsTool(config *config.McpServerConfig, client *client.Environ
 				mcp.Description("Optional field to sort by (e.g., name)"),
 			),
 			mcp.WithString("order",
-				mcp.Description("Optional sort order (asc or desc)"),
+				mcp.Description("Optional sort order"),
+				mcp.Enum("asc", "desc"),
 			),
 			mcp.WithNumber("page",
 				mcp.DefaultNumber(0),
@@ -70,11 +69,14 @@ func ListEnvironmentsTool(config *config.McpServerConfig, client *client.Environ
 				mcp.Description("Number of environments per page"),
 			),
 			common.WithScope(config, false),
+			mcp.WithOutputSchema[schemas.EnvironmentListOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			opts := &dto.EnvironmentOptions{}
@@ -82,7 +84,7 @@ func ListEnvironmentsTool(config *config.McpServerConfig, client *client.Environ
 			// Handle pagination
 			page, err := OptionalParam[float64](request, "page")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("page", err.Error()), nil
 			}
 			if page >= 0 {
 				opts.Page = int(page)
@@ -90,7 +92,7 @@ func ListEnvironmentsTool(config *config.McpServerConfig, client *client.Environ
 
 			limit, err := OptionalParam[float64](request, "limit")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("limit", err.Error()), nil
 			}
 			if limit > 0 {
 				opts.Limit = int(limit)
@@ -99,7 +101,7 @@ func ListEnvironmentsTool(config *config.McpServerConfig, client *client.Environ
 			// Handle other optional parameters
 			sort, err := OptionalParam[string](request, "sort")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("sort", err.Error()), nil
 			}
 			if sort != "" {
 				opts.Sort = sort
@@ -107,7 +109,7 @@ func ListEnvironmentsTool(config *config.McpServerConfig, client *client.Environ
 
 			order, err := OptionalParam[string](request, "order")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("order", err.Error()), nil
 			}
 			if order != "" {
 				opts.Order = order
@@ -118,20 +120,20 @@ func ListEnvironmentsTool(config *config.McpServerConfig, client *client.Environ
 				return nil, fmt.Errorf("failed to list environments: %w", err)
 			}
 
-			// Create response with environments and metadata
-			response := map[string]interface{}{
-				"environments": environments,
-				"totalCount":   totalCount,
-				"pageSize":     opts.Limit,
-				"pageNumber":   opts.Page,
+			// Transform to structured output
+			items := make([]schemas.EnvironmentListItem, 0, len(environments))
+			for _, e := range environments {
+				items = append(items, schemas.EnvironmentListItem{
+					Identifier:  e.Identifier,
+					Name:        e.Name,
+					Description: e.Description,
+					Type:        e.Type,
+					Tags:        e.Tags,
+				})
 			}
 
-			r, err := json.Marshal(response)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal environment list: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			output := schemas.NewPaginatedResult(items, opts.Page, opts.Limit, totalCount)
+			return schemas.NewStructuredResult(output)
 		}
 }
 
@@ -180,79 +182,81 @@ func MoveEnvironmentConfigsTool(config *config.McpServerConfig, client *client.E
 			),
 			mcp.WithString("move_config_type",
 				mcp.Required(),
-				mcp.Description("Specifies the direction of the move operation. Currently only INLINE_TO_REMOTE is supported for environments."),
+				mcp.Description("Specifies the direction of the move operation"),
+				mcp.Enum("INLINE_TO_REMOTE"),
 			),
+			mcp.WithOutputSchema[schemas.MoveConfigOutput](),
+			mcp.WithDestructiveHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			environmentIdentifier, err := RequiredParam[string](request, "environment_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("environment_identifier"), nil
 			}
 			accountIdentifier, err := RequiredParam[string](request, "account_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("account_identifier"), nil
 			}
 			orgIdentifier, err := OptionalParam[string](request, "org_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("org_identifier", err.Error()), nil
 			}
 			projectIdentifier, err := OptionalParam[string](request, "project_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("project_identifier", err.Error()), nil
 			}
 			moveConfigType, err := RequiredParam[string](request, "move_config_type")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("move_config_type"), nil
 			}
 
 			if moveConfigType != string(dto.InlineToRemote) {
-				return mcp.NewToolResultError("move_config_type must be INLINE_TO_REMOTE. The REMOTE_TO_INLINE operation is not supported for environments."), nil
+				return schemas.NewInvalidParamError("move_config_type", "must be INLINE_TO_REMOTE"), nil
 			}
 
 			connectorRef, err := OptionalParam[string](request, "connector_ref")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("connector_ref", err.Error()), nil
 			}
 
 			repoName, err := OptionalParam[string](request, "repo_name")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("repo_name", err.Error()), nil
 			}
 
 			branch, err := OptionalParam[string](request, "branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("branch", err.Error()), nil
 			}
 
 			filePath, err := OptionalParam[string](request, "file_path")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("file_path", err.Error()), nil
 			}
 
 			commitMsg, err := OptionalParam[string](request, "commit_msg")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("commit_msg", err.Error()), nil
 			}
 
 			isNewBranch, err := OptionalParam[bool](request, "is_new_branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("is_new_branch", err.Error()), nil
 			}
 
 			baseBranch, err := OptionalParam[string](request, "base_branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("base_branch", err.Error()), nil
 			}
 
 			isHarnessCodeRepo, err := OptionalParam[bool](request, "is_harness_code_repo")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("is_harness_code_repo", err.Error()), nil
 			}
 
 			// Create move request with the new structure
@@ -291,16 +295,13 @@ func MoveEnvironmentConfigsTool(config *config.McpServerConfig, client *client.E
 				return nil, fmt.Errorf("failed to move environment configurations: %w", err)
 			}
 
-			// Create the response
-			result := map[string]interface{}{
-				"success": success,
+			output := schemas.MoveConfigOutput{
+				Success: success,
+			}
+			if success {
+				output.Message = "Environment configuration moved successfully"
 			}
 
-			r, err := json.Marshal(result)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal response: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(output)
 		}
 }
