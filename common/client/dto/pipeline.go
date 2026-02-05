@@ -438,3 +438,68 @@ type TriggerListItem struct {
 	TargetIdentifier   string `json:"targetIdentifier,omitempty"`
 	PipelineIdentifier string `json:"pipelineIdentifier,omitempty"`
 }
+
+// PipelineExecuteOptions represents the options for executing a pipeline
+type PipelineExecuteOptions struct {
+	// ModuleType is the Harness module type (e.g., "cd", "ci", "pms")
+	ModuleType string `json:"moduleType,omitempty"`
+	// Branch is the git branch for pipelines stored in git
+	Branch string `json:"branch,omitempty"`
+	// RepoIdentifier is the repository identifier for git-stored pipelines
+	RepoIdentifier string `json:"repoIdentifier,omitempty"`
+	// Notes are optional notes for the pipeline execution
+	Notes string `json:"notes,omitempty"`
+}
+
+// PipelineExecuteRequest represents the request body for executing a pipeline
+type PipelineExecuteRequest struct {
+	// InputSetReferences is a list of input set identifiers to use for the execution
+	InputSetReferences []string `json:"inputSetReferences,omitempty"`
+	// WithMergedPipelineYaml indicates whether to return merged pipeline YAML in response
+	WithMergedPipelineYaml bool `json:"withMergedPipelineYaml,omitempty"`
+	// StageIdentifiers limits execution to specific stages (empty means all stages)
+	StageIdentifiers []string `json:"stageIdentifiers,omitempty"`
+	// LastYamlToMerge is additional YAML to merge with input sets (runtime inputs)
+	LastYamlToMerge string `json:"lastYamlToMerge,omitempty"`
+}
+
+// PipelineExecuteResponse represents the response from executing a pipeline
+type PipelineExecuteResponse struct {
+	Status        string                     `json:"status,omitempty"`
+	Data          PipelineExecuteData        `json:"data,omitempty"`
+	MetaData      map[string]interface{}     `json:"metaData,omitempty"`
+	CorrelationId string                     `json:"correlationId,omitempty"`
+}
+
+// PipelineExecuteData represents the data field in pipeline execution response
+type PipelineExecuteData struct {
+	PlanExecution   PlanExecution `json:"planExecution,omitempty"`
+	PlanExecutionId string        `json:"planExecutionId,omitempty"`
+}
+
+// PlanExecution represents the plan execution details
+type PlanExecution struct {
+	Uuid              string                 `json:"uuid,omitempty"`
+	CreatedAt         int64                  `json:"createdAt,omitempty"`
+	PlanId            string                 `json:"planId,omitempty"`
+	SetupAbstractions map[string]string      `json:"setupAbstractions,omitempty"`
+	ValidUntil        interface{}            `json:"validUntil,omitempty"`
+	Status            string                 `json:"status,omitempty"`
+	StartTs           int64                  `json:"startTs,omitempty"`
+	EndTs             int64                  `json:"endTs,omitempty"`
+	Metadata          PlanExecutionMetadata  `json:"metadata,omitempty"`
+	GovernanceMetadata interface{}           `json:"governanceMetadata,omitempty"`
+	LastUpdatedAt     int64                  `json:"lastUpdatedAt,omitempty"`
+	Version           int64                  `json:"version,omitempty"`
+	NextIteration     int64                  `json:"nextIteration,omitempty"`
+	Ambiance          map[string]interface{} `json:"ambiance,omitempty"`
+}
+
+// PlanExecutionMetadata represents metadata for a plan execution
+type PlanExecutionMetadata struct {
+	PipelineIdentifier string `json:"pipelineIdentifier,omitempty"`
+	PlanExecutionId    string `json:"planExecutionId,omitempty"`
+	RunSequence        int32  `json:"runSequence,omitempty"`
+	TriggerType        string `json:"triggerType,omitempty"`
+	ExecutionUuid      string `json:"executionUuid,omitempty"`
+}

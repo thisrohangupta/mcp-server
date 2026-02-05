@@ -143,6 +143,9 @@ func RegisterPipelines(config *config.McpServerConfig, tsg *toolsets.ToolsetGrou
 			toolsets.NewServerTool(tools.ListInputSetsTool(config, pipelineClient)),
 			toolsets.NewServerTool(tools.GetPipelineSummaryTool(config, pipelineClient)),
 			toolsets.NewServerTool(tools.ListTriggersTool(config, pipelineClient)),
+		).
+		AddWriteTools(
+			toolsets.NewServerTool(tools.ExecutePipelineTool(config, pipelineClient)),
 		)
 
 	// Add toolset to the group

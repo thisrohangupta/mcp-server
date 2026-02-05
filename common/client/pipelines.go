@@ -20,6 +20,7 @@ const (
 	pipelineInputSetPath         = "/api/inputSets/%s"
 	pipelineTriggersPath         = "/api/triggers"
 	pipelineSummaryPath          = "/api/pipelines/summary/%s"
+	pipelineExecuteWithInputSets = "/api/pipeline/execute/%s/inputSetList"
 )
 
 type PipelineService struct {
@@ -421,4 +422,56 @@ func (p *PipelineService) GetPipelineSummary(
 	}
 
 	return &responseData, nil
+}
+
+// Execute executes a pipeline with optional input set references
+func (p *PipelineService) Execute(
+	ctx context.Context,
+	scope dto.Scope,
+	pipelineIdentifier string,
+	request *dto.PipelineExecuteRequest,
+	opts *dto.PipelineExecuteOptions,
+) (*dto.PipelineExecuteResponse, error) {
+	path := fmt.Sprintf(pipelineExecuteWithInputSets, pipelineIdentifier)
+
+	// Prepare query parameters
+	params := make(map[string]string)
+	addScope(ctx, scope, params)
+
+	// Add required parameters
+	params["accountIdentifier"] = scope.AccountID
+	params["orgIdentifier"] = scope.OrgID
+	params["projectIdentifier"] = scope.ProjectID
+
+	// Add optional parameters from opts
+	if opts != nil {
+		if opts.ModuleType != "" {
+			params["moduleType"] = opts.ModuleType
+		}
+		if opts.Branch != "" {
+			params["branch"] = opts.Branch
+		}
+		if opts.RepoIdentifier != "" {
+			params["repoIdentifier"] = opts.RepoIdentifier
+		}
+		if opts.Notes != "" {
+			params["notesForPipelineExecution"] = opts.Notes
+		}
+	}
+
+	// Initialize the response object
+	response := &dto.PipelineExecuteResponse{}
+
+	// Handle nil request by creating an empty one
+	if request == nil {
+		request = &dto.PipelineExecuteRequest{}
+	}
+
+	// Make the POST request
+	err := p.Client.Post(ctx, path, params, request, map[string]string{}, response)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute pipeline: %w", err)
+	}
+
+	return response, nil
 }

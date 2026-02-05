@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	config "github.com/harness/mcp-server/common"
 	"github.com/harness/mcp-server/common/client"
@@ -424,6 +425,108 @@ type ActionData struct {
 			Metadata map[string]string `json:"metadata"`
 		} `json:"data"`
 	} `json:"actions"`
+}
+
+func ExecutePipelineTool(config *config.McpServerConfig, client *client.PipelineService) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool("execute_pipeline",
+			mcp.WithDescription("Execute a pipeline in Harness. Use list_pipelines to find the pipeline_id and list_input_sets to find available input sets. Returns the plan execution ID which can be used with get_execution to track progress."),
+			mcp.WithString("pipeline_id",
+				mcp.Required(),
+				mcp.Description("The identifier of the pipeline to execute."),
+			),
+			mcp.WithString("input_set_ids",
+				mcp.Description("Comma-separated list of input set identifiers to use for the execution. Use list_input_sets to find available input sets for the pipeline."),
+			),
+			mcp.WithString("stage_ids",
+				mcp.Description("Comma-separated list of stage identifiers to execute. If not provided, all stages will be executed."),
+			),
+			mcp.WithString("runtime_input_yaml",
+				mcp.Description("YAML string containing runtime inputs to merge with the pipeline. Use this to provide values for runtime inputs not covered by input sets."),
+			),
+			mcp.WithString("module_type",
+				mcp.Description("The Harness module type (e.g., 'cd', 'ci', 'pms'). Usually auto-detected."),
+			),
+			mcp.WithString("branch",
+				mcp.Description("Git branch name if the pipeline is stored in a git repository."),
+			),
+			mcp.WithString("notes",
+				mcp.Description("Optional notes to attach to the pipeline execution."),
+			),
+			common.WithScope(config, true),
+		),
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			pipelineID, err := RequiredParam[string](request, "pipeline_id")
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+
+			scope, err := common.FetchScope(ctx, config, request, true)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+
+			// Get optional parameters
+			inputSetIDs, _ := OptionalParam[string](request, "input_set_ids")
+			stageIDs, _ := OptionalParam[string](request, "stage_ids")
+			runtimeInputYAML, _ := OptionalParam[string](request, "runtime_input_yaml")
+			moduleType, _ := OptionalParam[string](request, "module_type")
+			branch, _ := OptionalParam[string](request, "branch")
+			notes, _ := OptionalParam[string](request, "notes")
+
+			// Build the execute request
+			executeRequest := &dto.PipelineExecuteRequest{}
+
+			// Parse input set IDs if provided
+			if inputSetIDs != "" {
+				executeRequest.InputSetReferences = parseCommaSeparated(inputSetIDs)
+			}
+
+			// Parse stage IDs if provided
+			if stageIDs != "" {
+				executeRequest.StageIdentifiers = parseCommaSeparated(stageIDs)
+			}
+
+			// Add runtime input YAML if provided
+			if runtimeInputYAML != "" {
+				executeRequest.LastYamlToMerge = runtimeInputYAML
+			}
+
+			// Build execution options
+			opts := &dto.PipelineExecuteOptions{
+				ModuleType: moduleType,
+				Branch:     branch,
+				Notes:      notes,
+			}
+
+			// Execute the pipeline
+			data, err := client.Execute(ctx, scope, pipelineID, executeRequest, opts)
+			if err != nil {
+				return nil, fmt.Errorf("failed to execute pipeline: %w", err)
+			}
+
+			r, err := json.Marshal(data)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal pipeline execution response: %w", err)
+			}
+
+			return mcp.NewToolResultText(string(r)), nil
+		}
+}
+
+// parseCommaSeparated splits a comma-separated string into a slice of trimmed strings
+func parseCommaSeparated(input string) []string {
+	if input == "" {
+		return nil
+	}
+	parts := strings.Split(input, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
 
 func ListTriggersTool(config *config.McpServerConfig, client *client.PipelineService) (tool mcp.Tool, handler server.ToolHandlerFunc) {
