@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { redactSensitiveFields, redactJsonString } from "../../src/utils/redact.js";
+import { redactSensitiveFields, redactJsonString, isSensitiveKey } from "../../src/utils/redact.js";
 
 describe("redactSensitiveFields", () => {
   it("redacts top-level sensitive keys", () => {
@@ -146,6 +146,56 @@ describe("redactSensitiveFields", () => {
     for (const key of Object.keys(input)) {
       expect(result[key]).toBe("[REDACTED]");
     }
+  });
+
+  it("redacts prefixed/suffixed sensitive keys (header-style and compound names)", () => {
+    const input = {
+      "x-api-key": "k1",
+      "harness_api_key": "k2",
+      "myAuthToken": "k3",
+      "X-Auth-Token": "k4",
+      "userPassword": "k5",
+      "github-access-token": "k6",
+      "X-Harness-Api-Key": "k7",
+    };
+    const result = redactSensitiveFields(input) as Record<string, unknown>;
+    for (const key of Object.keys(input)) {
+      expect(result[key], `expected ${key} to be redacted`).toBe("[REDACTED]");
+    }
+  });
+
+  it("does not over-redact lookalike non-sensitive keys", () => {
+    const input = {
+      identifier: "id",
+      name: "n",
+      description: "d",
+      orgId: "o",
+      username: "u",
+      tokenizer: "t",       // not a standalone "token"
+      keyboard: "k",        // contains "key" but no sensitive component
+      monkey: "m",
+    };
+    const result = redactSensitiveFields(input);
+    expect(result).toEqual(input);
+  });
+});
+
+describe("isSensitiveKey", () => {
+  it("matches sensitive components regardless of prefix/suffix or casing", () => {
+    expect(isSensitiveKey("x-api-key")).toBe(true);
+    expect(isSensitiveKey("harness_api_key")).toBe(true);
+    expect(isSensitiveKey("myAuthToken")).toBe(true);
+    expect(isSensitiveKey("PASSWORD")).toBe(true);
+    expect(isSensitiveKey("clientSecret")).toBe(true);
+    expect(isSensitiveKey("github.access.token")).toBe(true);
+  });
+
+  it("does not match non-sensitive keys", () => {
+    expect(isSensitiveKey("identifier")).toBe(false);
+    expect(isSensitiveKey("username")).toBe(false);
+    expect(isSensitiveKey("description")).toBe(false);
+    expect(isSensitiveKey("tokenizer")).toBe(false);
+    expect(isSensitiveKey("keyboard")).toBe(false);
   });
 });
 

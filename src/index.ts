@@ -15,7 +15,7 @@ import { registerAllResources } from "./resources/index.js";
 import { registerAllPrompts } from "./prompts/index.js";
 import { parseArgs, resolvePort, getVersion } from "./utils/cli.js";
 import { configureElicitation } from "./utils/elicitation.js";
-import { resolveHttpHostValidationOptions } from "./utils/http-hosts.js";
+import { resolveHttpHostValidationOptions, parseTrustProxySetting } from "./utils/http-hosts.js";
 import { createHttpAuthMiddleware, validateHttpAuthForBindHost } from "./utils/http-auth.js";
 import { loadEnvFile } from "./utils/env.js";
 import { createAuditManager, type AuditManager } from "./audit/index.js";
@@ -231,6 +231,16 @@ async function startHttp(config: Config, port: number): Promise<void> {
   validateHttpAuthForBindHost(host, config);
 
   const app = createMcpExpressApp(resolveHttpHostValidationOptions(host, config));
+
+  // Trust proxy — when running behind a reverse proxy / load balancer, this makes
+  // req.ip resolve to the real client IP (from X-Forwarded-For) so per-IP rate
+  // limiting is per-client rather than per-proxy. Off by default: with no proxy,
+  // req.ip is the direct socket address and cannot be spoofed via headers.
+  const trustProxy = parseTrustProxySetting(config.HARNESS_MCP_TRUST_PROXY);
+  if (trustProxy !== undefined) {
+    app.set("trust proxy", trustProxy);
+    log.info("Express trust proxy enabled", { trustProxy });
+  }
 
   // CORS — allow GET, POST, DELETE for session-based MCP
   app.use((_req, res, next) => {

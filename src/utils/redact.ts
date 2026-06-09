@@ -1,7 +1,30 @@
 const SENSITIVE_KEYS =
   "webhook[_-]?url|callback[_-]?url|endpoint[_-]?url|private[_-]?key|privateKey|client[_-]?secret|clientSecret|api[_-]?key|apiKey|secret[_-]?key|secretKey|access[_-]?key|accessKey|ssh[_-]?key|sshKey|access[_-]?token|accessToken|refresh[_-]?token|refreshToken|id[_-]?token|idToken|session[_-]?token|sessionToken|authorization|bearer|credentials?|passphrase|encrypted|password|webhook|secret|cookie|token";
 
-const SENSITIVE_KEY_PATTERN = new RegExp(`^(${SENSITIVE_KEYS})$`, "i");
+/**
+ * Component-match variant: a key is sensitive if any sensitive term appears as a
+ * delimited component of its name. Keys are normalized first (camelCase and
+ * `_ - . /` separators become spaces), so this catches prefixed/suffixed variants
+ * an anchored exact match would miss — e.g. `x-api-key`, `harness_api_key`,
+ * `myAuthToken`. Internal `[_-]?` separators in the term list become ` ?` so they
+ * align with the normalized (space-separated) form.
+ */
+const SENSITIVE_KEYS_NORMALIZED = SENSITIVE_KEYS.replace(/\[_-\]\?/g, " ?");
+const SENSITIVE_KEY_PATTERN = new RegExp(`\\b(?:${SENSITIVE_KEYS_NORMALIZED})\\b`, "i");
+
+/** Normalize a key name into space-separated lowercase tokens for matching. */
+function normalizeKeyName(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2") // split camelCase boundaries
+    .replace(/[^A-Za-z0-9]+/g, " ")          // separators (_ - . / etc.) → space
+    .trim()
+    .toLowerCase();
+}
+
+/** True when a key name contains a sensitive term as a delimited component. */
+export function isSensitiveKey(key: string): boolean {
+  return SENSITIVE_KEY_PATTERN.test(normalizeKeyName(key));
+}
 
 const REDACTED = "[REDACTED]";
 
@@ -22,7 +45,7 @@ export function redactSensitiveFields(obj: unknown, depth = 0): unknown {
 
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-    if (SENSITIVE_KEY_PATTERN.test(key)) {
+    if (isSensitiveKey(key)) {
       result[key] = REDACTED;
     } else if (typeof value === "object" && value !== null) {
       result[key] = redactSensitiveFields(value, depth + 1);

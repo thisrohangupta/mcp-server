@@ -95,6 +95,13 @@ const RawConfigSchema = z.object({
   HARNESS_MCP_ALLOWED_HOSTS: optionalStringFromEnv.transform(validateAllowedHosts),
   HARNESS_MCP_AUTH_TOKEN: optionalStringFromEnv,
   HARNESS_MCP_ALLOW_UNAUTHENTICATED_HTTP: booleanFromEnv.default(false),
+  // Express `trust proxy` setting for HTTP transport. When the server runs
+  // behind a reverse proxy / load balancer, set this so per-IP rate limiting
+  // keys on the real client IP (from X-Forwarded-For) instead of the proxy's
+  // single socket address. Accepts: "true"/"false", a hop count (e.g. "1"), a
+  // preset ("loopback", "uniquelocal"), or a comma-separated list of trusted
+  // IPs/subnets. Defaults to off (req.ip = direct socket IP, not spoofable).
+  HARNESS_MCP_TRUST_PROXY: optionalStringFromEnv,
   HARNESS_FME_API_KEY: optionalStringFromEnv,
   HARNESS_FME_BASE_URL: urlFromEnv("https://api.split.io"),
   HARNESS_LOG_UNSAFE_BODIES: booleanFromEnv.default(false),
