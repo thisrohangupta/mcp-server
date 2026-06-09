@@ -2,13 +2,13 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	config "github.com/harness/mcp-server/common"
 	"github.com/harness/mcp-server/common/client"
 	"github.com/harness/mcp-server/common/client/dto"
 	"github.com/harness/mcp-server/common/pkg/common"
+	"github.com/harness/mcp-server/common/pkg/schemas"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -30,6 +30,7 @@ func ListInfrastructuresTool(config *config.McpServerConfig, client *client.Infr
 			),
 			mcp.WithString("order",
 				mcp.Description("Optional sort order (asc or desc)"),
+				mcp.Enum("asc", "desc"),
 			),
 			mcp.WithNumber("page",
 				mcp.DefaultNumber(0),
@@ -41,11 +42,14 @@ func ListInfrastructuresTool(config *config.McpServerConfig, client *client.Infr
 				mcp.Description("Number of infrastructures per page"),
 			),
 			common.WithScope(config, false),
+			mcp.WithOutputSchema[schemas.InfrastructureListOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			opts := &dto.InfrastructureOptions{}
@@ -53,7 +57,7 @@ func ListInfrastructuresTool(config *config.McpServerConfig, client *client.Infr
 			// Handle pagination
 			page, err := OptionalParam[float64](request, "page")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("page", err.Error()), nil
 			}
 			if page >= 0 {
 				opts.Page = int(page)
@@ -61,7 +65,7 @@ func ListInfrastructuresTool(config *config.McpServerConfig, client *client.Infr
 
 			limit, err := OptionalParam[float64](request, "limit")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("limit", err.Error()), nil
 			}
 			if limit > 0 {
 				opts.Limit = int(limit)
@@ -70,7 +74,7 @@ func ListInfrastructuresTool(config *config.McpServerConfig, client *client.Infr
 			// Handle filters
 			deploymentType, err := OptionalParam[string](request, "deploymentType")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("deploymentType", err.Error()), nil
 			}
 			if deploymentType != "" {
 				opts.DeploymentType = deploymentType
@@ -78,17 +82,14 @@ func ListInfrastructuresTool(config *config.McpServerConfig, client *client.Infr
 
 			environmentIdentifier, err := RequiredParam[string](request, "environmentIdentifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("environmentIdentifier"), nil
 			}
-
-			if environmentIdentifier != "" {
-				opts.EnvironmentIdentifier = environmentIdentifier
-			}
+			opts.EnvironmentIdentifier = environmentIdentifier
 
 			// Handle sorting
 			sort, err := OptionalParam[string](request, "sort")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("sort", err.Error()), nil
 			}
 			if sort != "" {
 				opts.Sort = sort
@@ -96,7 +97,7 @@ func ListInfrastructuresTool(config *config.McpServerConfig, client *client.Infr
 
 			order, err := OptionalParam[string](request, "order")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("order", err.Error()), nil
 			}
 			if order != "" {
 				opts.Order = order
@@ -107,20 +108,22 @@ func ListInfrastructuresTool(config *config.McpServerConfig, client *client.Infr
 				return nil, fmt.Errorf("failed to list infrastructures: %w", err)
 			}
 
-			// Create response with infrastructures and metadata
-			response := map[string]interface{}{
-				"infrastructures": infrastructures,
-				"totalCount":      totalCount,
-				"pageSize":        opts.Limit,
-				"pageNumber":      opts.Page,
+			// Transform to structured output
+			items := make([]schemas.InfrastructureListItem, 0, len(infrastructures))
+			for _, infra := range infrastructures {
+				items = append(items, schemas.InfrastructureListItem{
+					Identifier:            infra.ID,
+					Name:                  infra.Name,
+					Description:           infra.Description,
+					EnvironmentIdentifier: infra.EnvironmentRef,
+					DeploymentType:        infra.DeploymentType,
+					Type:                  infra.Type,
+					Tags:                  infra.Tags,
+				})
 			}
 
-			r, err := json.Marshal(response)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal infrastructures list: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			output := schemas.NewPaginatedResult(items, opts.Page, opts.Limit, totalCount)
+			return schemas.NewStructuredResult(output)
 		}
 }
 
@@ -139,7 +142,8 @@ func MoveInfrastructureConfigsTool(config *config.McpServerConfig, client *clien
 			),
 			mcp.WithString("move_config_type",
 				mcp.Required(),
-				mcp.Description("Specifies the direction of the move operation. Options: INLINE_TO_REMOTE, REMOTE_TO_INLINE"),
+				mcp.Description("Specifies the direction of the move operation"),
+				mcp.Enum("INLINE_TO_REMOTE", "REMOTE_TO_INLINE"),
 			),
 			mcp.WithString("org_identifier",
 				mcp.Description("Organization identifier"),
@@ -171,85 +175,87 @@ func MoveInfrastructureConfigsTool(config *config.McpServerConfig, client *clien
 			mcp.WithBoolean("is_harness_code_repo",
 				mcp.Description("Is Harness code repo enabled"),
 			),
+			mcp.WithOutputSchema[schemas.MoveConfigOutput](),
+			mcp.WithDestructiveHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			// Get scope
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			// Extract required parameters
 			infraIdentifier, err := RequiredParam[string](request, "infra_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("infra_identifier"), nil
 			}
 
 			environmentIdentifier, err := RequiredParam[string](request, "environment_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("environment_identifier"), nil
 			}
 
 			moveConfigTypeStr, err := RequiredParam[string](request, "move_config_type")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("move_config_type"), nil
 			}
 
 			// Validate move config type
 			if moveConfigTypeStr != string(dto.InlineToRemote) && moveConfigTypeStr != string(dto.RemoteToInline) {
-				return mcp.NewToolResultError("move_config_type must be either INLINE_TO_REMOTE or REMOTE_TO_INLINE"), nil
+				return schemas.NewInvalidParamError("move_config_type", "must be INLINE_TO_REMOTE or REMOTE_TO_INLINE"), nil
 			}
 			moveConfigType := dto.MoveConfigType(moveConfigTypeStr)
 
 			// Extract optional parameters
 			orgIdentifier, err := OptionalParam[string](request, "org_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("org_identifier", err.Error()), nil
 			}
 
 			projectIdentifier, err := OptionalParam[string](request, "project_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("project_identifier", err.Error()), nil
 			}
 
 			connectorRef, err := OptionalParam[string](request, "connector_ref")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("connector_ref", err.Error()), nil
 			}
 
 			repoName, err := OptionalParam[string](request, "repo_name")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("repo_name", err.Error()), nil
 			}
 
 			branch, err := OptionalParam[string](request, "branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("branch", err.Error()), nil
 			}
 
 			filePath, err := OptionalParam[string](request, "file_path")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("file_path", err.Error()), nil
 			}
 
 			commitMsg, err := OptionalParam[string](request, "commit_msg")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("commit_msg", err.Error()), nil
 			}
 
 			isNewBranch, err := OptionalParam[bool](request, "is_new_branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("is_new_branch", err.Error()), nil
 			}
 
 			baseBranch, err := OptionalParam[string](request, "base_branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("base_branch", err.Error()), nil
 			}
 
 			isHarnessCodeRepo, err := OptionalParam[bool](request, "is_harness_code_repo")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("is_harness_code_repo", err.Error()), nil
 			}
 
 			// Create move request
@@ -287,17 +293,13 @@ func MoveInfrastructureConfigsTool(config *config.McpServerConfig, client *clien
 				return nil, fmt.Errorf("failed to move infrastructure configurations: %w", err)
 			}
 
-			// Create the response
-			result := map[string]interface{}{
-				"identifier": response.Data.Identifier,
-				"success":    response.Data.Success,
+			output := schemas.MoveConfigOutput{
+				Success: response.Data.Success,
+			}
+			if response.Data.Success {
+				output.Message = "Infrastructure configuration moved successfully"
 			}
 
-			r, err := json.Marshal(result)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal response: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(output)
 		}
 }
