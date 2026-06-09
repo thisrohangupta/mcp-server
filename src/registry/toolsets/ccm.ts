@@ -303,14 +303,6 @@ function buildPreferences(): Record<string, unknown> {
 // GraphQL endpoint path helper
 // ---------------------------------------------------------------------------
 
-function gqlPath(input: Record<string, unknown>): string {
-  const accountId = input.account_id as string | undefined;
-  if (accountId) {
-    return `/ccm/api/graphql?accountIdentifier=${accountId}&routingId=${accountId}`;
-  }
-  return "/ccm/api/graphql";
-}
-
 /**
  * Normalizes REST cost_category responses into the same {values} shape
  * that perspectiveFilters returns, so callers get a uniform interface.

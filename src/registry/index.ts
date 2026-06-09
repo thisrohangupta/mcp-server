@@ -58,6 +58,42 @@ const TOOLSET_ALIASES: Record<string, string> = {
   "agent-pipelines": "agents",
 };
 
+/**
+ * Defense-in-depth guard against path injection.
+ *
+ * Tool inputs (resource IDs, org/project, version labels, etc.) are interpolated
+ * into Harness API request paths. The `{placeholder}` substitution branch encodes
+ * values, but the many `pathBuilder` functions across toolsets assemble paths via
+ * raw template literals — an unencoded ID containing `..`, a stray `?`/`#`, or
+ * control characters could traverse to a different API endpoint or smuggle query
+ * parameters (e.g. overriding `accountIdentifier` to reach another account).
+ *
+ * Rather than rely on every pathBuilder encoding correctly, we validate the fully
+ * resolved path at the single dispatch chokepoint. Legitimate Harness paths are
+ * ASCII `/`-separated segments of already-encoded values; none contain `?`, `#`,
+ * whitespace, backslashes, or `.`/`..` traversal segments.
+ */
+function assertSafeResolvedPath(path: string, resourceType: string, method: string): void {
+  // Reject query/fragment introducers, backslashes, whitespace, and control chars.
+  // Query params are built separately and appended by HarnessClient — a `?`/`#`
+  // here can only have come from an interpolated input value.
+  if (/[?#\\]/.test(path) || /\s/.test(path) || /[\x00-\x1f\x7f]/.test(path)) {
+    throw new Error(
+      `Refusing to dispatch ${resourceType} (${method}): resolved API path contains illegal characters. ` +
+      `Check the identifiers passed — they must not contain '?', '#', '\\', or whitespace.`,
+    );
+  }
+  // Reject path-traversal segments.
+  for (const segment of path.split("/")) {
+    if (segment === ".." || segment === ".") {
+      throw new Error(
+        `Refusing to dispatch ${resourceType} (${method}): resolved API path contains a path-traversal segment ("${segment}"). ` +
+        `Check the identifiers passed.`,
+      );
+    }
+  }
+}
+
 function isResourceScope(value: unknown): value is ResourceScope {
   return typeof value === "string" && RESOURCE_SCOPES.includes(value as ResourceScope);
 }
@@ -563,6 +599,11 @@ export class Registry {
         }
       }
     }
+
+    // Defense-in-depth: validate the fully-resolved path before it reaches the
+    // HTTP client. Catches path-traversal / query-smuggling via interpolated
+    // input values that a pathBuilder may not have encoded.
+    assertSafeResolvedPath(path, def.resourceType, spec.method ?? "GET");
 
     // Build query params (values may be string[] for repeated query keys — see HarnessClient.buildUrl)
     const params: Record<string, string | number | boolean | string[] | undefined> = {};
