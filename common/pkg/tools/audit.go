@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math"
@@ -13,6 +12,7 @@ import (
 	"github.com/harness/mcp-server/common/client"
 	"github.com/harness/mcp-server/common/client/dto"
 	"github.com/harness/mcp-server/common/pkg/common"
+	"github.com/harness/mcp-server/common/pkg/schemas"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -67,18 +67,20 @@ func GetAuditYamlTool(config *config.McpServerConfig, auditClient *client.AuditS
 				mcp.Required(),
 			),
 			common.WithScope(config, false),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			slog.InfoContext(ctx, "Handling get_audit_yaml request", "request", request.GetArguments())
 
 			auditID, err := RequiredParam[string](request, "audit_id")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("audit_id"), nil
 			}
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			slog.InfoContext(ctx, "Calling GetAuditYaml API", "audit_id", auditID)
@@ -88,12 +90,7 @@ func GetAuditYamlTool(config *config.McpServerConfig, auditClient *client.AuditS
 				return nil, fmt.Errorf("failed to get audit YAML: %w", err)
 			}
 
-			r, err := json.Marshal(data)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal the audit YAML response: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(data)
 		}
 }
 
@@ -154,38 +151,41 @@ func ListUserAuditTrailTool(config *config.McpServerConfig, auditClient *client.
 			),
 			common.WithScope(config, false),
 			WithPagination(),
+			mcp.WithOutputSchema[schemas.AuditEventListOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			slog.InfoContext(ctx, "Handling list_user_audits request", "request", request.GetArguments())
 
 			userIDList, err := OptionalParam[string](request, "user_id_list")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("user_id_list", err.Error()), nil
 			}
 
 			actionsList, err := OptionalParam[string](request, "actions")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("actions", err.Error()), nil
 			}
 
 			resourceType, err := OptionalParam[string](request, "resource_type")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("resource_type", err.Error()), nil
 			}
 
 			resourceIdentifier, err := OptionalParam[string](request, "resource_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("resource_identifier", err.Error()), nil
 			}
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			page, size, err := FetchPagination(request)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("page/size", err.Error()), nil
 			}
 
 			page = int(math.Min(math.Max(float64(page), float64(minPage)), float64(maxPage)))
@@ -229,11 +229,6 @@ func ListUserAuditTrailTool(config *config.McpServerConfig, auditClient *client.
 				return nil, fmt.Errorf("failed to list the audit logs: %w", err)
 			}
 
-			r, err := json.Marshal(data)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal the audit logs: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(data)
 		}
 }

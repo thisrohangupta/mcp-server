@@ -124,7 +124,7 @@ func ListEnvironmentsTool(config *config.McpServerConfig, client *client.Environ
 			items := make([]schemas.EnvironmentListItem, 0, len(environments))
 			for _, e := range environments {
 				items = append(items, schemas.EnvironmentListItem{
-					Identifier:  e.Identifier,
+					Identifier:  e.ID,
 					Name:        e.Name,
 					Description: e.Description,
 					Type:        e.Type,

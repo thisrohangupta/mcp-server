@@ -151,8 +151,9 @@ func (p *PipelineService) ListExecutions(
 
 // PipelineExecutionResult contains the pipeline execution details and log keys
 type PipelineExecutionResult struct {
-	Execution dto.PipelineExecution `json:"execution,omitempty"`
-	LogKeys   dto.FinalLogKeys      `json:"logKeys,omitempty"`
+	Execution      dto.PipelineExecution `json:"execution,omitempty"`
+	ExecutionGraph dto.ExecutionGraph    `json:"executionGraph,omitempty"`
+	LogKeys        dto.FinalLogKeys      `json:"logKeys,omitempty"`
 }
 
 // GetExecutionWithLogKeys retrieves details of a specific pipeline execution along with log keys

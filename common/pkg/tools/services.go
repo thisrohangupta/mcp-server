@@ -124,7 +124,7 @@ func ListServicesTool(config *config.McpServerConfig, client *client.ServiceClie
 			items := make([]schemas.ServiceListItem, 0, len(services))
 			for _, s := range services {
 				items = append(items, schemas.ServiceListItem{
-					Identifier:  s.Identifier,
+					Identifier:  s.ID,
 					Name:        s.Name,
 					Description: s.Description,
 					Tags:        s.Tags,

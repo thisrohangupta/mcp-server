@@ -569,25 +569,26 @@ func GetPipelineSummaryTool(config *config.McpServerConfig, client *client.Pipel
 				return nil, fmt.Errorf("failed to get pipeline summary: %w", err)
 			}
 
+			summary := data.Data
 			output := schemas.PipelineSummaryOutput{
-				Identifier:    data.Identifier,
-				Name:          data.Name,
-				Description:   data.Description,
-				Tags:          data.Tags,
-				NumOfStages:   data.NumOfStages,
-				StageNames:    data.StageNames,
-				Modules:       data.Modules,
-				Version:       data.Version,
-				CreatedAt:     dto.FormatUnixMillisToRFC3339(data.CreatedAt),
-				LastUpdatedAt: dto.FormatUnixMillisToRFC3339(data.LastUpdatedAt),
+				Identifier:    summary.Identifier,
+				Name:          summary.Name,
+				Description:   summary.Description,
+				Tags:          summary.Tags,
+				NumOfStages:   summary.NumOfStages,
+				StageNames:    summary.StageNames,
+				Modules:       summary.Modules,
+				Version:       summary.Version,
+				CreatedAt:     dto.FormatUnixMillisToRFC3339(summary.CreatedAt),
+				LastUpdatedAt: dto.FormatUnixMillisToRFC3339(summary.LastUpdatedAt),
 			}
 
-			if data.ExecutionSummaryInfo != nil {
-				data.ExecutionSummaryInfo.FormatTimestamps()
+			if summary.ExecutionSummaryInfo != nil {
+				summary.ExecutionSummaryInfo.FormatTimestamps()
 				output.LastExecution = &schemas.ExecutionSummary{
-					ExecutionID: data.ExecutionSummaryInfo.LastExecutionId,
-					Status:      data.ExecutionSummaryInfo.LastExecutionStatus,
-					Timestamp:   data.ExecutionSummaryInfo.LastExecutionTsTime,
+					ExecutionID: summary.ExecutionSummaryInfo.LastExecutionId,
+					Status:      summary.ExecutionSummaryInfo.LastExecutionStatus,
+					Timestamp:   summary.ExecutionSummaryInfo.LastExecutionTsTime,
 				}
 			}
 
