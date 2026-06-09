@@ -72,6 +72,18 @@ const YAML_BLOCK_SECRET_PATTERN = new RegExp(
 );
 
 /**
+ * Scrub inline `key: value` / `key=value` secret pairs and YAML block scalars
+ * from free-form text. Use this for any string that may carry upstream-controlled
+ * content (e.g. API error messages, non-JSON response bodies) before it is
+ * surfaced to a caller or model. Does not truncate.
+ */
+export function redactSecretsInText(text: string): string {
+  return text
+    .replace(YAML_BLOCK_SECRET_PATTERN, `$1  ${REDACTED}\n`)
+    .replace(INLINE_SECRET_PATTERN, `$1: ${REDACTED}`);
+}
+
+/**
  * Redact sensitive fields in a JSON string. Returns the redacted string.
  * If parsing fails, scrubs inline sensitive key/value pairs then truncates.
  */
@@ -82,9 +94,7 @@ export function redactJsonString(jsonStr: string, maxLen = 1000): string {
     const out = JSON.stringify(redacted);
     return out.length > maxLen ? out.slice(0, maxLen) + "..." : out;
   } catch {
-    const scrubbed = jsonStr
-      .replace(YAML_BLOCK_SECRET_PATTERN, `$1  ${REDACTED}\n`)
-      .replace(INLINE_SECRET_PATTERN, `$1: ${REDACTED}`);
+    const scrubbed = redactSecretsInText(jsonStr);
     return scrubbed.length > maxLen ? scrubbed.slice(0, maxLen) + "..." : scrubbed;
   }
 }

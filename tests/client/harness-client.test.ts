@@ -357,6 +357,38 @@ describe("HarnessClient", () => {
       await expect(client.request({ path: "/test" })).rejects.toThrow(/HTTP 502: Bad Gateway/);
     });
 
+    it("scrubs secrets echoed back in an upstream error message", async () => {
+      fetchSpy.mockResolvedValue(new Response(
+        JSON.stringify({ message: "Connector test failed for api_key=sk_live_abcd1234", code: "INVALID" }),
+        { status: 400 },
+      ));
+      const client = new HarnessClient(makeConfig({ HARNESS_MAX_RETRIES: 0 }));
+
+      try {
+        await client.request({ path: "/test" });
+        expect.fail("should have thrown");
+      } catch (err) {
+        const e = err as HarnessApiError;
+        expect(e.message).not.toContain("sk_live_abcd1234");
+        expect(e.message).toContain("[REDACTED]");
+      }
+    });
+
+    it("scrubs secrets from a non-JSON response body snippet", async () => {
+      fetchSpy.mockResolvedValue(new Response('password: "hunter2-leaked-value"', { status: 200 }));
+      const client = new HarnessClient(makeConfig({ HARNESS_MAX_RETRIES: 0 }));
+
+      try {
+        await client.request({ path: "/test" });
+        expect.fail("should have thrown");
+      } catch (err) {
+        const e = err as HarnessApiError;
+        expect(e.message).toMatch(/Non-JSON response/);
+        expect(e.message).not.toContain("hunter2-leaked-value");
+        expect(e.message).toContain("[REDACTED]");
+      }
+    });
+
     it("returns actionable message for HTML 403 (proxy/WAF block)", async () => {
       const html = '<!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden';
       fetchSpy.mockResolvedValue(new Response(html, { status: 403 }));

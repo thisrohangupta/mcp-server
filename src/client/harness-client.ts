@@ -3,7 +3,7 @@ import type { RequestOptions } from "./types.js";
 import { HarnessApiError } from "../utils/errors.js";
 import { RateLimiter } from "../utils/rate-limiter.js";
 import { createLogger } from "../utils/logger.js";
-import { redactJsonString } from "../utils/redact.js";
+import { redactJsonString, redactSecretsInText } from "../utils/redact.js";
 import { isFormDataBody } from "../utils/type-guards.js";
 
 const log = createLogger("harness-client");
@@ -274,7 +274,7 @@ export class HarnessClient {
           const rawMessage = isGarbageMessage(parsed.message)
               ? humanizeHttpError(response.status, body)
               : parsed.message!;
-          const message = enrichErrorMessage(rawMessage, parsed, options.path);
+          const message = redactSecretsInText(enrichErrorMessage(rawMessage, parsed, options.path));
           log.debug(`HTTP ${response.status} error`, {
             body: this.logUnsafeBodies ? body.slice(0, 1000) : redactJsonString(body),
           });
@@ -321,7 +321,7 @@ export class HarnessClient {
           data = JSON.parse(text);
         } catch (parseErr) {
           throw new HarnessApiError(
-            `Non-JSON response from ${method} ${options.path}: ${text.slice(0, 200)}`,
+            `Non-JSON response from ${method} ${options.path}: ${redactSecretsInText(text.slice(0, 200))}`,
             502,
             undefined,
             undefined,
@@ -428,7 +428,7 @@ export class HarnessClient {
           const rawMessage = isGarbageMessage(parsed.message)
               ? humanizeHttpError(response.status, body)
               : parsed.message!;
-          const message = enrichErrorMessage(rawMessage, parsed, options.path);
+          const message = redactSecretsInText(enrichErrorMessage(rawMessage, parsed, options.path));
           const error = new HarnessApiError(message, response.status, parsed.code, parsed.correlationId);
 
           if (

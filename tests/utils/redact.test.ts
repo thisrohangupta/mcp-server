@@ -1,5 +1,28 @@
 import { describe, it, expect } from "vitest";
-import { redactSensitiveFields, redactJsonString, isSensitiveKey } from "../../src/utils/redact.js";
+import { redactSensitiveFields, redactJsonString, isSensitiveKey, redactSecretsInText } from "../../src/utils/redact.js";
+
+describe("redactSecretsInText", () => {
+  it("scrubs inline key=value secrets, preserving leading context", () => {
+    // An unquoted value is redacted through to the next delimiter, so trailing
+    // text after the secret is also masked (safe over-redaction).
+    const text = "Connector test failed for api_key=sk_live_abcd1234, then retried";
+    const result = redactSecretsInText(text);
+    expect(result).not.toContain("sk_live_abcd1234");
+    expect(result).toContain("[REDACTED]");
+    expect(result).toContain("Connector test failed for");
+    expect(result).toContain("then retried"); // text after the comma delimiter survives
+  });
+
+  it("scrubs quoted secrets and bearer tokens in prose", () => {
+    expect(redactSecretsInText('token: "abc.def.ghi"')).not.toContain("abc.def.ghi");
+    expect(redactSecretsInText("authorization: Bearer abc.def.ghi")).not.toContain("abc.def.ghi");
+  });
+
+  it("leaves text without secret pairs unchanged", () => {
+    const text = "Pipeline execution pipeline_abc123 failed at stage build";
+    expect(redactSecretsInText(text)).toBe(text);
+  });
+});
 
 describe("redactSensitiveFields", () => {
   it("redacts top-level sensitive keys", () => {
