@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"github.com/harness/mcp-server/common/client"
 	"github.com/harness/mcp-server/common/client/dto"
 	"github.com/harness/mcp-server/common/pkg/common"
+	"github.com/harness/mcp-server/common/pkg/schemas"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -28,22 +28,25 @@ func GetPullRequestTool(config *config.McpServerConfig, client *client.PullReque
 				mcp.Description("The number of the pull request"),
 			),
 			common.WithScope(config, true),
+			mcp.WithOutputSchema[schemas.PullRequestOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			repoID, err := RequiredParam[string](request, "repo_id")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("repo_id"), nil
 			}
 
 			prNumberFloat, err := RequiredParam[float64](request, "pr_number")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("pr_number"), nil
 			}
 			prNumber := int(prNumberFloat)
 
 			scope, err := common.FetchScope(ctx, config, request, true)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			data, err := client.Get(ctx, scope, repoID, prNumber)
@@ -51,17 +54,11 @@ func GetPullRequestTool(config *config.McpServerConfig, client *client.PullReque
 				return nil, fmt.Errorf("failed to get pull request: %w", err)
 			}
 
-			r, err := json.Marshal(data)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal pull request: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(data)
 		}
 }
 
 // ListPullRequestsTool creates a tool for listing pull requests
-// TODO: more options can be added (sort, order, timestamps, etc)
 func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullRequestService) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool("list_pull_requests",
 			mcp.WithDescription("List pull requests in a Harness repository."),
@@ -70,7 +67,8 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 				mcp.Description("The ID of the repository"),
 			),
 			mcp.WithString("state",
-				mcp.Description("Optional comma-separated states to filter pull requests (possible values: open,closed,merged)"),
+				mcp.Description("Optional comma-separated states to filter pull requests"),
+				mcp.Enum("open", "closed", "merged"),
 			),
 			mcp.WithString("source_branch",
 				mcp.Description("Optional source branch to filter pull requests"),
@@ -93,16 +91,19 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 				mcp.Description("Number of items per page"),
 			),
 			common.WithScope(config, true),
+			mcp.WithOutputSchema[schemas.PullRequestListOutput](),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			repoID, err := RequiredParam[string](request, "repo_id")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("repo_id"), nil
 			}
 
 			scope, err := common.FetchScope(ctx, config, request, true)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			opts := &dto.PullRequestOptions{}
@@ -110,7 +111,7 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 			// Handle pagination
 			page, err := OptionalParam[float64](request, "page")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("page", err.Error()), nil
 			}
 			if page > 0 {
 				opts.Page = int(page)
@@ -118,7 +119,7 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 
 			limit, err := OptionalParam[float64](request, "limit")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("limit", err.Error()), nil
 			}
 			if limit > 0 {
 				opts.Limit = int(limit)
@@ -127,7 +128,7 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 			// Handle other optional parameters
 			stateStr, err := OptionalParam[string](request, "state")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("state", err.Error()), nil
 			}
 			if stateStr != "" {
 				opts.State = parseCommaSeparatedList(stateStr)
@@ -135,7 +136,7 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 
 			sourceBranch, err := OptionalParam[string](request, "source_branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("source_branch", err.Error()), nil
 			}
 			if sourceBranch != "" {
 				opts.SourceBranch = sourceBranch
@@ -143,7 +144,7 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 
 			targetBranch, err := OptionalParam[string](request, "target_branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("target_branch", err.Error()), nil
 			}
 			if targetBranch != "" {
 				opts.TargetBranch = targetBranch
@@ -151,7 +152,7 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 
 			query, err := OptionalParam[string](request, "query")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("query", err.Error()), nil
 			}
 			if query != "" {
 				opts.Query = query
@@ -159,19 +160,19 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 
 			authorIDStr, err := OptionalParam[string](request, "author_id")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("author_id", err.Error()), nil
 			}
 			if authorIDStr != "" {
 				authorID, err := strconv.Atoi(authorIDStr)
 				if err != nil {
-					return mcp.NewToolResultError(fmt.Sprintf("invalid author_id: %s", authorIDStr)), nil
+					return schemas.NewInvalidParamError("author_id", fmt.Sprintf("invalid value: %s", authorIDStr)), nil
 				}
 				opts.AuthorID = authorID
 			}
 
 			includeChecks, err := OptionalParam[bool](request, "include_checks")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("include_checks", err.Error()), nil
 			}
 			opts.IncludeChecks = includeChecks
 
@@ -180,12 +181,7 @@ func ListPullRequestsTool(config *config.McpServerConfig, client *client.PullReq
 				return nil, fmt.Errorf("failed to list pull requests: %w", err)
 			}
 
-			r, err := json.Marshal(data)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal pull request list: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(data)
 		}
 }
 
@@ -226,22 +222,24 @@ func GetPullRequestChecksTool(config *config.McpServerConfig, client *client.Pul
 				mcp.Description("The number of the pull request"),
 			),
 			common.WithScope(config, false),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			repoIdentifier, err := RequiredParam[string](request, "repo_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("repo_identifier"), nil
 			}
 
 			prNumberFloat, err := RequiredParam[float64](request, "pr_number")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("pr_number"), nil
 			}
 			prNumber := int(prNumberFloat)
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			data, err := client.GetChecks(ctx, scope, repoIdentifier, prNumber)
@@ -249,12 +247,7 @@ func GetPullRequestChecksTool(config *config.McpServerConfig, client *client.Pul
 				return nil, fmt.Errorf("failed to get pull request checks: %w", err)
 			}
 
-			r, err := json.Marshal(data)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal pull request checks: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(data)
 		}
 }
 
@@ -286,41 +279,42 @@ func CreatePullRequestTool(config *config.McpServerConfig, client *client.PullRe
 				mcp.DefaultBool(false),
 			),
 			common.WithScope(config, false),
+			mcp.WithOutputSchema[schemas.PullRequestCreateOutput](),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			repoIdentifier, err := RequiredParam[string](request, "repo_identifier")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("repo_identifier"), nil
 			}
 
 			title, err := RequiredParam[string](request, "title")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("title"), nil
 			}
 
 			description, err := OptionalParam[string](request, "description")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("description", err.Error()), nil
 			}
 
 			sourceBranch, err := RequiredParam[string](request, "source_branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("source_branch"), nil
 			}
 
 			isDraft, err := OptionalParam[bool](request, "is_draft")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("is_draft", err.Error()), nil
 			}
 
 			targetBranch, err := OptionalParam[string](request, "target_branch")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("target_branch", err.Error()), nil
 			}
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			createRequest := &dto.CreatePullRequest{
@@ -336,12 +330,7 @@ func CreatePullRequestTool(config *config.McpServerConfig, client *client.PullRe
 				return nil, fmt.Errorf("failed to create pull request: %w", err)
 			}
 
-			r, err := json.Marshal(data)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal pull request: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(data)
 		}
 }
 
@@ -377,22 +366,24 @@ func GetPullRequestActivitiesTool(config *config.McpServerConfig, client *client
 				mcp.Max(100),
 			),
 			common.WithScope(config, false),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			repoID, err := RequiredParam[string](request, "repo_id")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("repo_id"), nil
 			}
 
 			prNumberFloat, err := RequiredParam[float64](request, "pr_number")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("pr_number"), nil
 			}
 			prNumber := int(prNumberFloat)
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 
 			// Create the options struct
@@ -400,7 +391,7 @@ func GetPullRequestActivitiesTool(config *config.McpServerConfig, client *client
 
 			limit, err := OptionalParam[float64](request, "limit")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("limit", err.Error()), nil
 			}
 			if limit > 0 {
 				opts.Limit = int(limit)
@@ -409,7 +400,7 @@ func GetPullRequestActivitiesTool(config *config.McpServerConfig, client *client
 			// Handle filtering parameters
 			kindStr, err := OptionalParam[string](request, "kind")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("kind", err.Error()), nil
 			}
 			if kindStr != "" {
 				opts.Kind = parseCommaSeparatedList(kindStr)
@@ -417,7 +408,7 @@ func GetPullRequestActivitiesTool(config *config.McpServerConfig, client *client
 
 			typeStr, err := OptionalParam[string](request, "type")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("type", err.Error()), nil
 			}
 			if typeStr != "" {
 				opts.Type = parseCommaSeparatedList(typeStr)
@@ -425,7 +416,7 @@ func GetPullRequestActivitiesTool(config *config.McpServerConfig, client *client
 
 			after, err := OptionalParam[float64](request, "after")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("after", err.Error()), nil
 			}
 			if after > 0 {
 				opts.After = int64(after)
@@ -433,7 +424,7 @@ func GetPullRequestActivitiesTool(config *config.McpServerConfig, client *client
 
 			before, err := OptionalParam[float64](request, "before")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("before", err.Error()), nil
 			}
 			if before > 0 {
 				opts.Before = int64(before)
@@ -446,14 +437,9 @@ func GetPullRequestActivitiesTool(config *config.McpServerConfig, client *client
 
 			data, err := client.GetActivities(ctx, scope, repoID, prNumber, opts)
 			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("failed to get pull request activities: %s", err.Error())), nil
+				return nil, fmt.Errorf("failed to get pull request activities: %w", err)
 			}
 
-			r, err := json.Marshal(data)
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("failed to marshal pull request activities: %s", err.Error())), nil
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(data)
 		}
 }
