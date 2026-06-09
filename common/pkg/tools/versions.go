@@ -2,12 +2,12 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	config "github.com/harness/mcp-server/common"
 	"github.com/harness/mcp-server/common/client/ar"
 	"github.com/harness/mcp-server/common/pkg/common"
+	"github.com/harness/mcp-server/common/pkg/schemas"
 	"github.com/harness/mcp-server/common/pkg/utils"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -33,23 +33,25 @@ func ListArtifactVersionsTool(config *config.McpServerConfig, client *ar.ClientW
 			),
 			common.WithScope(config, false),
 			WithPagination(),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			registryRef, err := RequiredParam[string](request, "registry")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("registry"), nil
 			}
 
 			artifactRef, err := RequiredParam[string](request, "artifact")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("artifact"), nil
 			}
 
 			params := &ar.GetAllArtifactVersionsParams{}
 
 			pageInt, sizeInt, err := FetchPagination(request)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("page/size", err.Error()), nil
 			}
 			pageInt64, sizeInt64 := int64(pageInt), int64(sizeInt)
 			params.Page = &pageInt64
@@ -58,7 +60,7 @@ func ListArtifactVersionsTool(config *config.McpServerConfig, client *ar.ClientW
 			// Handle search parameter
 			search, ok, err := OptionalParamOK[string](request, "search")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("search", err.Error()), nil
 			}
 			if ok && search != "" {
 				params.SearchTerm = &search
@@ -66,7 +68,7 @@ func ListArtifactVersionsTool(config *config.McpServerConfig, client *ar.ClientW
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 			registryFullRef := utils.GetRef(scope, registryRef)
 
@@ -74,20 +76,15 @@ func ListArtifactVersionsTool(config *config.McpServerConfig, client *ar.ClientW
 			response, err := client.GetAllArtifactVersionsWithResponse(ctx, registryFullRef, artifactRef,
 				params)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return nil, fmt.Errorf("failed to list artifact versions: %w", err)
 			}
 
 			if response.JSON200 == nil {
-				return mcp.NewToolResultError(fmt.Errorf("failed to list artifact versions: unexpected response status %d",
-					response.StatusCode()).Error()), nil
+				return nil, fmt.Errorf("failed to list artifact versions: unexpected response status %d",
+					response.StatusCode())
 			}
 
-			r, err := json.Marshal(response.JSON200.Data)
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Errorf("failed to marshal versions data: %w", err).Error()), nil
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(response.JSON200.Data)
 		}
 }
 
@@ -120,28 +117,30 @@ func ListArtifactFilesTool(config *config.McpServerConfig, client *ar.ClientWith
 			),
 			common.WithScope(config, false),
 			WithPagination(),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			registryRef, err := RequiredParam[string](request, "registry")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("registry"), nil
 			}
 
 			artifactRef, err := RequiredParam[string](request, "artifact")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("artifact"), nil
 			}
 
 			versionRef, err := RequiredParam[string](request, "version")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("version"), nil
 			}
 
 			params := &ar.GetArtifactFilesParams{}
 
 			pageInt, sizeInt, err := FetchPagination(request)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("page/size", err.Error()), nil
 			}
 			pageInt64, sizeInt64 := int64(pageInt), int64(sizeInt)
 			params.Page = &pageInt64
@@ -150,7 +149,7 @@ func ListArtifactFilesTool(config *config.McpServerConfig, client *ar.ClientWith
 			// Handle sort options
 			sortOrder, ok, err := OptionalParamOK[string](request, "sort_order")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("sort_order", err.Error()), nil
 			}
 			if ok && sortOrder != "" {
 				params.SortOrder = &sortOrder
@@ -158,7 +157,7 @@ func ListArtifactFilesTool(config *config.McpServerConfig, client *ar.ClientWith
 
 			sortField, ok, err := OptionalParamOK[string](request, "sort_field")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewInvalidParamError("sort_field", err.Error()), nil
 			}
 			if ok && sortField != "" {
 				params.SortField = &sortField
@@ -166,7 +165,7 @@ func ListArtifactFilesTool(config *config.McpServerConfig, client *ar.ClientWith
 
 			scope, err := common.FetchScope(ctx, config, request, false)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewScopeError(err.Error()), nil
 			}
 			registryFullRef := utils.GetRef(scope, registryRef)
 
@@ -174,19 +173,14 @@ func ListArtifactFilesTool(config *config.McpServerConfig, client *ar.ClientWith
 			response, err := client.GetArtifactFilesWithResponse(ctx, registryFullRef, artifactRef, versionRef,
 				params)
 			if err != nil {
-				return mcp.NewToolResultError(fmt.Errorf("failed to list artifact files: %w", err).Error()), nil
+				return nil, fmt.Errorf("failed to list artifact files: %w", err)
 			}
 
 			if response.JSON200 == nil {
-				return mcp.NewToolResultError(fmt.Errorf("failed to list artifact files: unexpected response status %d",
-					response.StatusCode()).Error()), nil
+				return nil, fmt.Errorf("failed to list artifact files: unexpected response status %d",
+					response.StatusCode())
 			}
 
-			r, err := json.Marshal(response.JSON200)
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Errorf("failed to marshal files data: %w", err).Error()), nil
-			}
-
-			return mcp.NewToolResultText(string(r)), nil
+			return schemas.NewStructuredResult(response.JSON200)
 		}
 }
