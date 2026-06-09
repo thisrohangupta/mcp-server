@@ -3,19 +3,19 @@ package schemas
 // ConnectorOutput represents a connector in structured output format.
 // Used by: get_connector_details
 type ConnectorOutput struct {
-	Identifier        string                `json:"identifier"`
-	Name              string                `json:"name"`
-	Description       string                `json:"description,omitempty"`
-	Type              string                `json:"type"`
-	AccountIdentifier string                `json:"account_identifier,omitempty"`
-	OrgIdentifier     string                `json:"org_identifier,omitempty"`
-	ProjectIdentifier string                `json:"project_identifier,omitempty"`
-	Tags              map[string]string     `json:"tags,omitempty"`
-	Status            *ConnectorStatusInfo  `json:"status,omitempty"`
-	CreatedAt         string                `json:"created_at,omitempty"`
-	LastModifiedAt    string                `json:"last_modified_at,omitempty"`
-	HarnessManaged    bool                  `json:"harness_managed,omitempty"`
-	Spec              map[string]any        `json:"spec,omitempty"`
+	Identifier        string               `json:"identifier"`
+	Name              string               `json:"name"`
+	Description       string               `json:"description,omitempty"`
+	Type              string               `json:"type"`
+	AccountIdentifier string               `json:"account_identifier,omitempty"`
+	OrgIdentifier     string               `json:"org_identifier,omitempty"`
+	ProjectIdentifier string               `json:"project_identifier,omitempty"`
+	Tags              map[string]string    `json:"tags,omitempty"`
+	Status            *ConnectorStatusInfo `json:"status,omitempty"`
+	CreatedAt         string               `json:"created_at,omitempty"`
+	LastModifiedAt    string               `json:"last_modified_at,omitempty"`
+	HarnessManaged    bool                 `json:"harness_managed,omitempty"`
+	Spec              map[string]any       `json:"spec,omitempty"`
 }
 
 // ConnectorStatusInfo contains connector connectivity status.
@@ -66,29 +66,29 @@ type ConnectorType struct {
 // SecretOutput represents a secret in structured output format.
 // Used by: get_secret
 type SecretOutput struct {
-	Identifier        string            `json:"identifier"`
-	Name              string            `json:"name"`
-	Description       string            `json:"description,omitempty"`
-	Type              string            `json:"type"`
-	OrgIdentifier     string            `json:"org_identifier,omitempty"`
-	ProjectIdentifier string            `json:"project_identifier,omitempty"`
-	Tags              map[string]string `json:"tags,omitempty"`
-	SecretManagerIdentifier string      `json:"secret_manager_identifier,omitempty"`
-	CreatedAt         string            `json:"created_at,omitempty"`
-	UpdatedAt         string            `json:"updated_at,omitempty"`
+	Identifier              string            `json:"identifier"`
+	Name                    string            `json:"name"`
+	Description             string            `json:"description,omitempty"`
+	Type                    string            `json:"type"`
+	OrgIdentifier           string            `json:"org_identifier,omitempty"`
+	ProjectIdentifier       string            `json:"project_identifier,omitempty"`
+	Tags                    map[string]string `json:"tags,omitempty"`
+	SecretManagerIdentifier string            `json:"secret_manager_identifier,omitempty"`
+	CreatedAt               string            `json:"created_at,omitempty"`
+	UpdatedAt               string            `json:"updated_at,omitempty"`
 }
 
 // SecretListItem represents a secret in list responses.
 // Used by: list_secrets
 type SecretListItem struct {
-	Identifier        string            `json:"identifier"`
-	Name              string            `json:"name"`
-	Description       string            `json:"description,omitempty"`
-	Type              string            `json:"type"`
-	OrgIdentifier     string            `json:"org_identifier,omitempty"`
-	ProjectIdentifier string            `json:"project_identifier,omitempty"`
-	Tags              map[string]string `json:"tags,omitempty"`
-	SecretManagerIdentifier string      `json:"secret_manager_identifier,omitempty"`
+	Identifier              string            `json:"identifier"`
+	Name                    string            `json:"name"`
+	Description             string            `json:"description,omitempty"`
+	Type                    string            `json:"type"`
+	OrgIdentifier           string            `json:"org_identifier,omitempty"`
+	ProjectIdentifier       string            `json:"project_identifier,omitempty"`
+	Tags                    map[string]string `json:"tags,omitempty"`
+	SecretManagerIdentifier string            `json:"secret_manager_identifier,omitempty"`
 }
 
 // SecretListOutput is the structured output for list_secrets.
@@ -162,14 +162,14 @@ type MoveConfigOutput struct {
 
 // AuditEventOutput represents an audit event in structured output format.
 type AuditEventOutput struct {
-	AuditID          string            `json:"audit_id"`
-	ResourceType     string            `json:"resource_type"`
-	ResourceIdentifier string          `json:"resource_identifier,omitempty"`
-	Action           string            `json:"action"`
-	Module           string            `json:"module,omitempty"`
-	Timestamp        string            `json:"timestamp"`
-	AuthenticationInfo *AuthInfo       `json:"authentication_info,omitempty"`
-	HttpRequestInfo  *HttpRequestInfo  `json:"http_request_info,omitempty"`
+	AuditID            string           `json:"audit_id"`
+	ResourceType       string           `json:"resource_type"`
+	ResourceIdentifier string           `json:"resource_identifier,omitempty"`
+	Action             string           `json:"action"`
+	Module             string           `json:"module,omitempty"`
+	Timestamp          string           `json:"timestamp"`
+	AuthenticationInfo *AuthInfo        `json:"authentication_info,omitempty"`
+	HttpRequestInfo    *HttpRequestInfo `json:"http_request_info,omitempty"`
 }
 
 // AuthInfo contains authentication details for audit events.
@@ -190,19 +190,19 @@ type AuditEventListOutput = PaginatedResult[AuditEventOutput]
 
 // TemplateOutput represents a template in structured output format.
 type TemplateOutput struct {
-	Identifier        string            `json:"identifier"`
-	Name              string            `json:"name"`
-	Description       string            `json:"description,omitempty"`
-	VersionLabel      string            `json:"version_label,omitempty"`
-	TemplateEntityType string           `json:"template_entity_type,omitempty"`
-	ChildType         string            `json:"child_type,omitempty"`
-	OrgIdentifier     string            `json:"org_identifier,omitempty"`
-	ProjectIdentifier string            `json:"project_identifier,omitempty"`
-	Tags              map[string]string `json:"tags,omitempty"`
-	Yaml              string            `json:"yaml,omitempty"`
-	StableTemplate    bool              `json:"stable_template,omitempty"`
-	CreatedAt         string            `json:"created_at,omitempty"`
-	LastUpdatedAt     string            `json:"last_updated_at,omitempty"`
+	Identifier         string            `json:"identifier"`
+	Name               string            `json:"name"`
+	Description        string            `json:"description,omitempty"`
+	VersionLabel       string            `json:"version_label,omitempty"`
+	TemplateEntityType string            `json:"template_entity_type,omitempty"`
+	ChildType          string            `json:"child_type,omitempty"`
+	OrgIdentifier      string            `json:"org_identifier,omitempty"`
+	ProjectIdentifier  string            `json:"project_identifier,omitempty"`
+	Tags               map[string]string `json:"tags,omitempty"`
+	Yaml               string            `json:"yaml,omitempty"`
+	StableTemplate     bool              `json:"stable_template,omitempty"`
+	CreatedAt          string            `json:"created_at,omitempty"`
+	LastUpdatedAt      string            `json:"last_updated_at,omitempty"`
 }
 
 // TemplateListItem represents a template in list responses.
