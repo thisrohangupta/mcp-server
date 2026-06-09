@@ -2,11 +2,11 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	config "github.com/harness/mcp-server/common"
 	"github.com/harness/mcp-server/common/client"
+	"github.com/harness/mcp-server/common/pkg/schemas"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -15,19 +15,16 @@ import (
 func ListFMEWorkspacesTool(config *config.McpServerConfig, fmeService *client.FMEService) (mcp.Tool, server.ToolHandlerFunc) {
 	return mcp.NewTool("list_fme_workspaces",
 			mcp.WithDescription("List Feature Management & Experimentation (FME) workspaces."),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			workspaces, err := fmeService.ListWorkspaces(ctx)
 			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("failed to list FME workspaces: %v", err)), nil
+				return nil, fmt.Errorf("failed to list FME workspaces: %w", err)
 			}
 
-			responseBytes, err := json.Marshal(workspaces)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal workspaces: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(responseBytes)), nil
+			return schemas.NewStructuredResult(workspaces)
 		}
 }
 
@@ -39,24 +36,21 @@ func ListFMEEnvironmentsTool(config *config.McpServerConfig, fmeService *client.
 				mcp.Required(),
 				mcp.Description("The workspace ID to list environments for"),
 			),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			wsID, err := RequiredParam[string](request, "ws_id")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("ws_id"), nil
 			}
 
 			environments, err := fmeService.ListEnvironments(ctx, wsID)
 			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("failed to list FME environments: %v", err)), nil
+				return nil, fmt.Errorf("failed to list FME environments: %w", err)
 			}
 
-			responseBytes, err := json.Marshal(environments)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal environments: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(responseBytes)), nil
+			return schemas.NewStructuredResult(environments)
 		}
 }
 
@@ -68,24 +62,21 @@ func ListFMEFeatureFlagsTool(config *config.McpServerConfig, fmeService *client.
 				mcp.Required(),
 				mcp.Description("The workspace ID to list feature flags for"),
 			),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			wsID, err := RequiredParam[string](request, "ws_id")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("ws_id"), nil
 			}
 
 			featureFlags, err := fmeService.ListFeatureFlags(ctx, wsID)
 			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("failed to list FME feature flags: %v", err)), nil
+				return nil, fmt.Errorf("failed to list FME feature flags: %w", err)
 			}
 
-			responseBytes, err := json.Marshal(featureFlags)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal feature flags: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(responseBytes)), nil
+			return schemas.NewStructuredResult(featureFlags)
 		}
 }
 
@@ -105,33 +96,30 @@ func GetFMEFeatureFlagDefinitionTool(config *config.McpServerConfig, fmeService 
 				mcp.Required(),
 				mcp.Description("The environment ID or name"),
 			),
+			mcp.WithReadOnlyHintAnnotation(true),
+			mcp.WithIdempotentHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			wsID, err := RequiredParam[string](request, "ws_id")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("ws_id"), nil
 			}
 
 			flagName, err := RequiredParam[string](request, "feature_flag_name")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("feature_flag_name"), nil
 			}
 
 			envIDOrName, err := RequiredParam[string](request, "environment_id_or_name")
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return schemas.NewMissingParamError("environment_id_or_name"), nil
 			}
 
 			definition, err := fmeService.GetFeatureFlagDefinition(ctx, wsID, flagName, envIDOrName)
 			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("failed to get FME feature flag definition: %v", err)), nil
+				return nil, fmt.Errorf("failed to get FME feature flag definition: %w", err)
 			}
 
-			responseBytes, err := json.Marshal(definition)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal feature flag definition: %w", err)
-			}
-
-			return mcp.NewToolResultText(string(responseBytes)), nil
+			return schemas.NewStructuredResult(definition)
 		}
 }
