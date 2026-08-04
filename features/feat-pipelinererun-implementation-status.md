@@ -1,20 +1,28 @@
-# Pipeline Execution Rerun — Implementation Status
-<!-- github-implementation-status:v1 plan=features/feat-pipelinererun-plan.md plan-blob=32e7732a9cfad31478d7c4fe11c1964d35eb573b -->
+# Implementation Status: feat-pipelinererun
 
-## Tasks
+<!-- implementation-status:v1 plan-blob=32e7732a9cfad31478d7c4fe11c1964d35eb573b run-id=feat-pipelinererun-run-1 -->
 
- #      Task                                                                                                        Status    Attempts   Commit SHA   Last Run ID                    Notes
-━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━  ━━━━━━━━━  ━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- 1      Identify and extract shared rerun logic                                                                     done      1          SELF         feat-pipelinererun-run-1       Created src/utils/rerun.ts: native retry → 405 fallback → unsafe refusal; RerunResult type with rerun_mode, source_execution_id, execution_id
- 2      Register `retry` action on the `execution` toolset definition                                               pending   0          —            —
- 3      Update `pipeline` toolset `retry` action to delegate to shared rerun logic                                  pending   0          —            —
- 4      Implement native retry attempt (`PUT /pipeline/api/pipeline/execute/retry/{planExecutionId}`)               pending   0          —            —
- 5      Implement fresh-run fallback: resolve pipeline ID and effective inputs from execution details               pending   0          —            —
- 6      Implement unsafe-fallback prevention                                                                        pending   0          —            —
- 7      Normalise response shape: add `rerun_mode`, `source_execution_id`, `execution_id` fields                    pending   0          —            —
- 8      Wire `wait=true` to poll the new execution ID returned by the rerun                                         pending   0          —            —
- 9      Update URL parser to confirm `execution` resource_type extraction                                           pending   0          —            —
- 10     Update `harness_describe` metadata for `execution` resource                                                 pending   0          —            —
- 11     Apply `risk: high_write`, `retryPolicy: do_not_retry`, `HARNESS_READ_ONLY` check                            pending   0          —            —
- 12     Write unit and integration tests                                                                            pending   0          —            —
- 13     Update tool/action descriptions and generated documentation                                                 pending   0          —            —
+## Run Metadata
+
+- **Run ID**: feat-pipelinererun-run-1
+- **Plan blob**: `32e7732a9cfad31478d7c4fe11c1964d35eb573b`
+- **Branch**: feat-pipelinererun
+- **Started**: 2026-08-04
+
+## Task Status
+
+| Task | Status | Attempts | Commit SHA | Notes |
+|------|--------|----------|------------|---------|
+| T1 | done | 1 | 2b1ff45c7ebeed7111a2058f6ac3e19b904a68eb | Created src/utils/rerun.ts and initialized sidecar |
+| T2 | done | 1 | SELF | Added retry execute action to execution resource in pipelines.ts |
+| T3 | pending | 0 | — | Update harness-execute.ts to delegate to executeRerun() |
+| T4 | pending | 0 | — | |
+| T5 | pending | 0 | — | |
+| T6 | pending | 0 | — | |
+| T7 | pending | 0 | — | |
+| T8 | pending | 0 | — | |
+| T9 | pending | 0 | — | |
+| T10 | pending | 0 | — | |
+| T11 | pending | 0 | — | |
+| T12 | pending | 0 | — | |
+| T13 | pending | 0 | — | |

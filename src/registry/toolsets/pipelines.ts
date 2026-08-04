@@ -668,6 +668,20 @@ export const pipelinesToolset: ToolsetDefinition = {
           responseExtractor: ngExtract,
           actionDescription: "Interrupt a running execution. Pass interrupt_type as a param: AbortAll (abort all stages), Pause, Resume, StageRollback, Abort (abort current retry), ExpireAll, or Retry.",
         },
+        retry: {
+          method: "PUT",
+          path: "/pipeline/api/pipeline/execute/retry/{planExecutionId}",
+          operationPolicy: { risk: "high_write", retryPolicy: "do_not_retry" },
+          pathParams: { execution_id: "planExecutionId" },
+          queryParams: { module: "module" },
+          bodyBuilder: () => ({}),
+          responseExtractor: ngExtract,
+          actionDescription: "Rerun a pipeline execution by its execution ID. Attempts the native Harness retry endpoint first; on HTTP 405 falls back to a fresh pipeline run using recovered execution context. Response always includes rerun_mode ('native_retry' or 'fresh_run_fallback') and source_execution_id. Use wait=true to block until the new execution reaches a terminal status.",
+          bodySchema: {
+            description: "No request body required. Pass execution ID via resource_id or a Harness execution URL.",
+            fields: [],
+          },
+        },
       },
     },
     {
