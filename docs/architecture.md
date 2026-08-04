@@ -114,7 +114,7 @@ Client supports MCP form elicitation?
 
 These actions have production blast radius and block on clients without elicitation:
 
-- **Pipelines:** `pipeline.run`, `pipeline_v1.run`, `pipeline.retry`
+- **Pipelines:** `pipeline.run`, `pipeline_v1.run`, `pipeline.retry`, `execution.retry`
 - **Chaos:** `chaos_experiment.run`, `chaos_loadtest.run`
 - **GitOps:** `gitops_application.sync`, `gitops_application.bulk_sync`
 - **Feature Flags:** `fme_feature_flag.kill`, `fme_feature_flag.restore`, `fme_feature_flag.archive`, `fme_feature_flag.unarchive`
@@ -122,6 +122,14 @@ These actions have production blast radius and block on clients without elicitat
 - **Freeze:** `freeze_window.toggle_status`, `global_freeze.manage`
 - **STO:** `security_exemption.create`, `security_exemption.approve`, `security_exemption.reject`, `security_exemption.promote`
 - **IDP:** `idp_workflow.execute`
+
+> **`execution.retry` fallback behaviour.** This action first attempts the native Harness retry endpoint
+> (`PUT /pipeline/api/pipeline/execute/retry/{planExecutionId}`). When that endpoint returns HTTP 405,
+> it automatically falls back to a fresh pipeline run using the original execution's context. The response
+> always includes `rerun_mode` (`"native_retry"` or `"fresh_run_fallback"`) and `source_execution_id` so
+> callers can distinguish the two paths. If the pipeline ID cannot be recovered for the fallback, the
+> action fails with an actionable error — it never starts an execution with unknown inputs.
+> `retryPolicy: do_not_retry` is enforced on both paths because the operation is non-idempotent.
 
 ---
 
@@ -139,6 +147,11 @@ src/registry/toolsets/*.ts    ← toolset modules; each EndpointSpec declares
 src/registry/index.ts         ← Registry class; dispatch() passes specs to
                                  executeSpec(); does NOT read operationPolicy for
                                  elicitation (that's for tool handlers and future P5)
+
+src/utils/rerun.ts            ← shared rerun logic used by pipeline.retry and
+                                 execution.retry; native retry → 405 fallback →
+                                 unsafe-refusal guard; always returns RerunResult
+                                 with rerun_mode and source_execution_id
 
 src/tools/harness-create.ts   ┐
 src/tools/harness-update.ts   ├─ pass operationPolicy.risk and session config
@@ -225,6 +238,8 @@ In multi-user mode, per-session Harness credentials come from initialize headers
 `harness_execute` supports `wait: true` for pipeline run/retry actions. After the trigger succeeds, the tool extracts the execution ID and calls `pollExecutionToTerminal()` with progress notifications over the MCP request context. The wait result is merged into the response envelope with fields such as `execution_status`, `execution_terminal`, `execution_timed_out`, and `_wait`.
 
 Wait failure is intentionally non-fatal to the trigger: if polling errors or the client cancels, the response includes `_wait.error` or `_wait.cancelled` and tells the caller to recheck the returned `execution_id`. This avoids duplicate pipeline runs caused by treating a poll failure as a failed trigger.
+
+`execution.retry` with `wait: true` follows the same polling contract. The execution ID used for polling is always the **new** execution started by the rerun (whether native retry or fresh-run fallback), not the source execution ID.
 
 ### Audit Sinks
 

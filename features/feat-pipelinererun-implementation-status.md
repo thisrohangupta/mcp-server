@@ -24,5 +24,5 @@
 | T9 | done | 0 | — | Already satisfied: url-parser.ts maps executions/deployments → execution resource_type with execution_id |
 | T10 | done | 0 | — | Already satisfied by T2: execution.retry in executeActions auto-surfaced by harness_describe |
 | T11 | done | 0 | — | Already satisfied by T2: operationPolicy risk:high_write retryPolicy:do_not_retry declared on execution.retry |
-| T12 | done | 1 | SELF | Added tests/utils/rerun.test.ts covering native retry, 405 fallback, pipelineId resolution, error propagation |
-| T13 | pending | 0 | — | Update documentation |
+| T12 | done | 1 | ae814ddbf2cd6d41595b2e0365c244f2fe5fe96d | Added tests/utils/rerun.test.ts covering native retry, 405 fallback, pipelineId resolution, error propagation |
+| T13 | done | 1 | SELF | Updated docs/architecture.md: added execution.retry to high_write list, documented fallback behaviour, added rerun.ts to module graph |
