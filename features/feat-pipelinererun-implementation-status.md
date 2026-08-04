@@ -25,4 +25,8 @@
 | T10 | done | 0 | — | Already satisfied by T2: execution.retry in executeActions auto-surfaced by harness_describe |
 | T11 | done | 0 | — | Already satisfied by T2: operationPolicy risk:high_write retryPolicy:do_not_retry declared on execution.retry |
 | T12 | done | 1 | ae814ddbf2cd6d41595b2e0365c244f2fe5fe96d | Added tests/utils/rerun.test.ts covering native retry, 405 fallback, pipelineId resolution, error propagation |
-| T13 | done | 1 | SELF | Updated docs/architecture.md: added execution.retry to high_write list, documented fallback behaviour, added rerun.ts to module graph |
+| T13 | done | 1 | 4c8bd3dc1111f22306ee1eabfde8f7bd21d82d39 | Updated docs/architecture.md: added execution.retry to high_write list, documented fallback behaviour, added rerun.ts to module graph |
+
+## Outcome
+
+All 13 tasks complete. Run ID feat-pipelinererun-run-1 finished 2026-08-04.
