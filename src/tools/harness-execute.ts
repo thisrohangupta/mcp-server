@@ -17,6 +17,7 @@ import { resourceScopeSchema, resourceTypeSchema } from "./input-schemas.js";
 import { pollExecutionToTerminal, FAILURE_STATUSES, AbortError } from "../utils/poll-execution.js";
 import { sendProgress } from "../utils/progress.js";
 import { executeOutputSchema } from "./output-schemas.js";
+import { executeRerun } from "../utils/rerun.js";
 
 const log = createLogger("execute");
 
@@ -106,6 +107,7 @@ function applyExecuteActionTargetRemap(
  *  - v0 pipeline retry: usually returns `{ planExecutionId, ... }` directly
  *  - v1 pipeline run (passthrough): `{ execution_details: { execution_id } }` or
  *    `{ execution_id }` / `{ executionId }` depending on endpoint version
+ *  - RerunResult: `{ execution_id, source_execution_id, rerun_mode, ... }`
  */
 function extractExecutionId(result: unknown, resourceType: string): string | undefined {
   const rec = asRecord(result);
@@ -120,7 +122,8 @@ function extractExecutionId(result: unknown, resourceType: string): string | und
   return asString(rec.planExecutionId)
     ?? asString(planExec?.uuid)
     ?? asString(asRecord(planExec?.metadata)?.executionUuid)
-    ?? asString(rec.executionId);
+    ?? asString(rec.executionId)
+    ?? asString(rec.execution_id);
 }
 
 export function registerExecuteTool(server: McpServer, registry: Registry, client: HarnessClient, config: Config): void {
@@ -132,7 +135,7 @@ export function registerExecuteTool(server: McpServer, registry: Registry, clien
       description: "Execute an action on a Harness resource: run/retry/interrupt pipelines, kill/restore FME feature flags, test connectors, sync GitOps apps, run chaos experiments. You can pass a Harness URL to auto-extract identifiers. Pass `wait: true` for pipeline run/retry to block until the execution reaches a terminal status — single tool call instead of an LLM polling loop. For HQL batch operations pass `queries` with resource_type='hql_query' and action='validate' or 'run'.",
       inputSchema: {
         // .describe() must be the LAST call in every chain — Zod 4's
-        // .optional() / .default() / .min() / .max() each return a fresh
+        // .optional() / .default() / .min() / .max() / .max() each return a fresh
         // wrapper schema whose `.description` getter does NOT walk into the
         // inner schema (verified on @modelcontextprotocol/sdk via
         // getSchemaDescription). A description set before any of those
@@ -463,39 +466,26 @@ export function registerExecuteTool(server: McpServer, registry: Registry, clien
         let effectiveResourceType = resourceType;
         let effectiveAction = args.action;
 
-        try {
-          result = await registry.dispatchExecute(client, resourceType, args.action, input, auditCtx);
-        } catch (err) {
-          if (
-            args.action === "retry" &&
-            resourceType === "pipeline" &&
-            err instanceof HarnessApiError &&
-            err.statusCode === 405
-          ) {
-            log.info("Retry returned 405, falling back to fresh pipeline run");
-            let pipelineId = asString(input.pipeline_id);
-
-            if (!pipelineId && input.execution_id) {
-              try {
-                const exec = asRecord(await registry.dispatch(client, "execution", "get", input));
-                const pes = asRecord(exec?.pipelineExecutionSummary);
-                pipelineId = asString(pes?.pipelineIdentifier);
-              } catch {
-                // Fall through — will error below
-              }
-            }
-
-            if (!pipelineId) {
-              return errorResult("Retry is not available for this execution (405). Provide pipeline_id to run a fresh execution instead.");
-            }
-
-            input.pipeline_id = pipelineId;
-            result = await registry.dispatchExecute(client, "pipeline", "run", input, { ...auditCtx, action: "run (retry fallback)" });
-            envelope._note = "Retry was not available (405). Executed a fresh pipeline run instead.";
+        // Rerun path: execution.retry and pipeline.retry both delegate to the
+        // shared executeRerun() utility which handles native-retry-first /
+        // fresh-run-fallback logic and always returns a normalised RerunResult.
+        if (args.action === "retry" && (resourceType === "pipeline" || resourceType === "execution")) {
+          const executionId = asString(input.execution_id) ?? resourceId ?? "";
+          const rerunResult = await executeRerun(registry, client, {
+            executionId,
+            pipelineId: asString(input.pipeline_id),
+            input,
+            auditCtx,
+          });
+          result = rerunResult;
+          envelope.rerun_mode = rerunResult.rerun_mode;
+          envelope.source_execution_id = rerunResult.source_execution_id;
+          if (rerunResult.rerun_mode === "fresh_run_fallback") {
             effectiveAction = "run";
-          } else {
-            throw err;
+            if (rerunResult._note) envelope._note = rerunResult._note;
           }
+        } else {
+          result = await registry.dispatchExecute(client, resourceType, args.action, input, auditCtx);
         }
 
         if (resolved) {
@@ -506,12 +496,15 @@ export function registerExecuteTool(server: McpServer, registry: Registry, clien
           };
         }
 
-        // Opt-in server-side wait for pipeline run/retry. Avoids the LLM
-        // burning tokens on a polling loop — a single tool call returns the
-        // terminal status.
+        // Opt-in server-side wait for pipeline run/retry and execution retry.
+        // Avoids the LLM burning tokens on a polling loop — a single tool call
+        // returns the terminal status.
         const isWaitable =
           wait === true &&
-          (effectiveResourceType === "pipeline" || effectiveResourceType === "pipeline_v1") &&
+          (
+            (effectiveResourceType === "pipeline" || effectiveResourceType === "pipeline_v1") ||
+            (effectiveResourceType === "execution" && args.action === "retry")
+          ) &&
           (effectiveAction === "run" || effectiveAction === "retry");
 
         if (isWaitable) {
