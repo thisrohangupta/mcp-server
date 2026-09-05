@@ -1821,6 +1821,125 @@ const schema: Record<string, any> = {
                   "assertion": {
                     "type": "string"
                   },
+                  "authentication": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "None",
+                          "Basic",
+                          "BearerToken",
+                          "ApiKey"
+                        ],
+                        "default": "None"
+                      },
+                      "spec": {
+                        "type": "object",
+                        "properties": {
+                          "username": {
+                            "type": "string"
+                          },
+                          "password": {
+                            "type": "string"
+                          },
+                          "token": {
+                            "type": "string"
+                          },
+                          "keyName": {
+                            "type": "string"
+                          },
+                          "keyValue": {
+                            "type": "string"
+                          },
+                          "addTo": {
+                            "type": "string",
+                            "enum": [
+                              "Header",
+                              "QueryParameter"
+                            ],
+                            "default": "Header"
+                          }
+                        }
+                      }
+                    },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "type": {
+                              "const": "Basic"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ]
+                        },
+                        "then": {
+                          "required": [
+                            "spec"
+                          ],
+                          "properties": {
+                            "spec": {
+                              "required": [
+                                "username",
+                                "password"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "type": {
+                              "const": "BearerToken"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ]
+                        },
+                        "then": {
+                          "required": [
+                            "spec"
+                          ],
+                          "properties": {
+                            "spec": {
+                              "required": [
+                                "token"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "type": {
+                              "const": "ApiKey"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ]
+                        },
+                        "then": {
+                          "required": [
+                            "spec"
+                          ],
+                          "properties": {
+                            "spec": {
+                              "required": [
+                                "keyName",
+                                "keyValue"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
                   "delegateSelectors": {
                     "oneOf": [
                       {
@@ -1897,6 +2016,125 @@ const schema: Record<string, any> = {
             "properties": {
               "assertion": {
                 "type": "string"
+              },
+              "authentication": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "None",
+                      "Basic",
+                      "BearerToken",
+                      "ApiKey"
+                    ],
+                    "default": "None"
+                  },
+                  "spec": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "type": "string"
+                      },
+                      "password": {
+                        "type": "string"
+                      },
+                      "token": {
+                        "type": "string"
+                      },
+                      "keyName": {
+                        "type": "string"
+                      },
+                      "keyValue": {
+                        "type": "string"
+                      },
+                      "addTo": {
+                        "type": "string",
+                        "enum": [
+                          "Header",
+                          "QueryParameter"
+                        ],
+                        "default": "Header"
+                      }
+                    }
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {
+                          "const": "Basic"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    },
+                    "then": {
+                      "required": [
+                        "spec"
+                      ],
+                      "properties": {
+                        "spec": {
+                          "required": [
+                            "username",
+                            "password"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {
+                          "const": "BearerToken"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    },
+                    "then": {
+                      "required": [
+                        "spec"
+                      ],
+                      "properties": {
+                        "spec": {
+                          "required": [
+                            "token"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {
+                          "const": "ApiKey"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    },
+                    "then": {
+                      "required": [
+                        "spec"
+                      ],
+                      "properties": {
+                        "spec": {
+                          "required": [
+                            "keyName",
+                            "keyValue"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
               },
               "delegateSelectors": {
                 "oneOf": [
@@ -7159,6 +7397,174 @@ const schema: Record<string, any> = {
               }
             }
           },
+          "FmeChangeProposalSubmitStepNode": {
+            "title": "FmeChangeProposalSubmitStepNode",
+            "type": "object",
+            "required": [
+              "identifier",
+              "name",
+              "spec",
+              "type"
+            ],
+            "properties": {
+              "description": {
+                "type": "string",
+                "desc": "This is the description for FmeChangeProposalSubmitStepNode"
+              },
+              "enforce": {
+                "$ref": "#/definitions/pipeline/common/PolicyConfig"
+              },
+              "failureStrategies": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/pipeline/common/FailureStrategyConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "identifier": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
+              },
+              "strategy": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StrategyConfig"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "timeout": {
+                "type": "string",
+                "pattern": "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "FmeChangeProposalSubmit"
+                ]
+              },
+              "when": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StepWhenCondition"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "FmeChangeProposalSubmit"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/steps/custom/FmeChangeProposalSubmitStepInfo"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "FmeChangeProposalSubmitStepInfo": {
+            "title": "FmeChangeProposalSubmitStepInfo",
+            "allOf": [
+              {
+                "$ref": "#/definitions/pipeline/common/StepSpecType"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "resourceType",
+                  "changes"
+                ],
+                "properties": {
+                  "resourceType": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/fme-change-proposal-common-resource-type"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "resourceId": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/fme-change-proposal-common-resource-id"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "environmentId": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/fme-change-proposal-common-resource-id"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "changes": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/pipeline/steps/common/fme-change-proposal-common-change"
+                        },
+                        "minItems": 1
+                      }
+                    ]
+                  },
+                  "title": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/fme-change-proposal-common-title"
+                      }
+                    ]
+                  },
+                  "comment": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/fme-change-proposal-common-comment"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
           "FmeFlagCreateStepNode": {
             "title": "FmeFlagCreateStepNode",
             "type": "object",
@@ -7326,6 +7732,10 @@ const schema: Record<string, any> = {
                       },
                       {
                         "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^$"
                       }
                     ]
                   },
@@ -12400,7 +12810,7 @@ const schema: Record<string, any> = {
                           ],
                           "properties": {
                             "ref": {
-                              "description": "Webadmin metric ID",
+                              "description": "Metric name as defined in FME (e.g. page_viewtime1_mean)",
                               "oneOf": [
                                 {
                                   "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
@@ -16053,6 +16463,22 @@ const schema: Record<string, any> = {
                   "properties": {
                     "spec": {
                       "$ref": "#/definitions/pipeline/steps/common/MythosAgentStepInfo"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "ClaudeCodeSecurity"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/steps/common/ClaudeCodeSecurityStepInfo"
                     }
                   }
                 }
@@ -28999,6 +29425,17 @@ const schema: Record<string, any> = {
                   "connectorRef": {
                     "type": "string"
                   },
+                  "llmConnectorRef": {
+                    "description": "Harness LLM connector reference for Codex authentication (OpenAI or Anthropic)",
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
                   "imageTag": {
                     "type": "string"
                   },
@@ -29091,6 +29528,9 @@ const schema: Record<string, any> = {
                   },
                   "target": {
                     "$ref": "#/definitions/pipeline/steps/common/STOYamlTarget"
+                  },
+                  "tool": {
+                    "$ref": "#/definitions/pipeline/steps/common/STOYamlOpenAiToolData"
                   }
                 }
               }
@@ -29131,6 +29571,17 @@ const schema: Record<string, any> = {
               },
               "connectorRef": {
                 "type": "string"
+              },
+              "llmConnectorRef": {
+                "description": "Harness LLM connector reference for Codex authentication (OpenAI or Anthropic)",
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                  }
+                ]
               },
               "imageTag": {
                 "type": "string"
@@ -29225,10 +29676,26 @@ const schema: Record<string, any> = {
               "target": {
                 "$ref": "#/definitions/pipeline/steps/common/STOYamlTarget"
               },
+              "tool": {
+                "$ref": "#/definitions/pipeline/steps/common/STOYamlOpenAiToolData"
+              },
               "description": {
                 "desc": "This is the description for OpenAiStepInfo"
               }
             }
+          },
+          "STOYamlOpenAiToolData": {
+            "title": "STOYamlOpenAiToolData",
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "string"
+              },
+              "description": {
+                "desc": "This is the description for STOYamlOpenAiToolData"
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#"
           },
           "MythosAgentStepInfo": {
             "title": "MythosAgentStepInfo",
@@ -29263,6 +29730,17 @@ const schema: Record<string, any> = {
                   },
                   "connectorRef": {
                     "type": "string"
+                  },
+                  "llmConnectorRef": {
+                    "description": "Harness LLM connector reference for Mythos Agent authentication (OpenAI or Anthropic)",
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
                   },
                   "imageTag": {
                     "type": "string"
@@ -29391,6 +29869,17 @@ const schema: Record<string, any> = {
               "connectorRef": {
                 "type": "string"
               },
+              "llmConnectorRef": {
+                "description": "Harness LLM connector reference for Mythos Agent authentication (OpenAI or Anthropic)",
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                  }
+                ]
+              },
               "imageTag": {
                 "type": "string"
               },
@@ -29504,6 +29993,317 @@ const schema: Record<string, any> = {
               },
               "description": {
                 "desc": "This is the description for STOYamlMythosAgentToolData"
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "ClaudeCodeSecurityStepInfo": {
+            "title": "ClaudeCodeSecurityStepInfo",
+            "allOf": [
+              {
+                "$ref": "#/definitions/pipeline/common/StepSpecType"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "config",
+                  "mode",
+                  "target"
+                ],
+                "properties": {
+                  "advanced": {
+                    "$ref": "#/definitions/pipeline/steps/common/STOYamlAdvancedSettings"
+                  },
+                  "auth": {
+                    "$ref": "#/definitions/pipeline/steps/common/STOYamlAuth"
+                  },
+                  "baseImageConnectorRefs": {
+                    "$ref": "#/definitions/pipeline/steps/ci/ParameterFieldListString"
+                  },
+                  "config": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "pr_scan"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "connectorRef": {
+                    "type": "string"
+                  },
+                  "llmConnectorRef": {
+                    "description": "Harness LLM connector reference for Claude Code Security authentication (Anthropic)",
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "imageTag": {
+                    "type": "string"
+                  },
+                  "imagePullPolicy": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Always",
+                          "Never",
+                          "IfNotPresent"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "ingestion": {
+                    "$ref": "#/definitions/pipeline/steps/common/STOYamlIngestion"
+                  },
+                  "mode": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "ingestion",
+                          "orchestration"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "outputVariables": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/pipeline/common/OutputNGVariable"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\)))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "privileged": {
+                    "oneOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\)))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "resources": {
+                    "$ref": "#/definitions/pipeline/common/ContainerResource"
+                  },
+                  "runAsUser": {
+                    "oneOf": [
+                      {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "settings": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/common/ParameterFieldMapStringJsonNode"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "target": {
+                    "$ref": "#/definitions/pipeline/steps/common/STOYamlTarget"
+                  },
+                  "tool": {
+                    "$ref": "#/definitions/pipeline/steps/common/STOYamlClaudeCodeSecurityToolData"
+                  }
+                }
+              }
+            ],
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "config",
+              "mode",
+              "target"
+            ],
+            "properties": {
+              "advanced": {
+                "$ref": "#/definitions/pipeline/steps/common/STOYamlAdvancedSettings"
+              },
+              "auth": {
+                "$ref": "#/definitions/pipeline/steps/common/STOYamlAuth"
+              },
+              "baseImageConnectorRefs": {
+                "$ref": "#/definitions/pipeline/steps/ci/ParameterFieldListString"
+              },
+              "config": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "pr_scan"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "(<\\+.+>.*)",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "connectorRef": {
+                "type": "string"
+              },
+              "llmConnectorRef": {
+                "description": "Harness LLM connector reference for Claude Code Security authentication (Anthropic)",
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                  }
+                ]
+              },
+              "imageTag": {
+                "type": "string"
+              },
+              "imagePullPolicy": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "Always",
+                      "Never",
+                      "IfNotPresent"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "(<\\+.+>.*)",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "ingestion": {
+                "$ref": "#/definitions/pipeline/steps/common/STOYamlIngestion"
+              },
+              "mode": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "ingestion",
+                      "orchestration"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "(<\\+.+>.*)",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "outputVariables": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/pipeline/common/OutputNGVariable"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\)))*$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "privileged": {
+                "oneOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\)))*$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "resources": {
+                "$ref": "#/definitions/pipeline/common/ContainerResource"
+              },
+              "runAsUser": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "settings": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/ParameterFieldMapStringJsonNode"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "target": {
+                "$ref": "#/definitions/pipeline/steps/common/STOYamlTarget"
+              },
+              "tool": {
+                "$ref": "#/definitions/pipeline/steps/common/STOYamlClaudeCodeSecurityToolData"
+              },
+              "description": {
+                "desc": "This is the description for ClaudeCodeSecurityStepInfo"
+              }
+            }
+          },
+          "STOYamlClaudeCodeSecurityToolData": {
+            "title": "STOYamlClaudeCodeSecurityToolData",
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "string"
+              },
+              "description": {
+                "desc": "This is the description for STOYamlClaudeCodeSecurityToolData"
               }
             },
             "$schema": "http://json-schema.org/draft-07/schema#"
@@ -29692,6 +30492,196 @@ const schema: Record<string, any> = {
                   "properties": {
                     "spec": {
                       "$ref": "#/definitions/pipeline/steps/common/SnykStepInfo"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "GitleaksScanNode": {
+            "title": "GitleaksScanNode",
+            "type": "object",
+            "required": [
+              "identifier",
+              "name",
+              "spec",
+              "type"
+            ],
+            "properties": {
+              "description": {
+                "type": "string",
+                "desc": "This is the description for GitleaksScanNode"
+              },
+              "enforce": {
+                "$ref": "#/definitions/pipeline/common/PolicyConfig"
+              },
+              "failureStrategies": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/pipeline/common/FailureStrategyConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "identifier": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
+              },
+              "strategy": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StrategyConfig"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "timeout": {
+                "type": "string",
+                "pattern": "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Gitleaks"
+                ]
+              },
+              "when": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StepWhenCondition"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "Gitleaks"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/steps/common/GitleaksStepInfo"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "SonarqubeScanNode": {
+            "title": "SonarqubeScanNode",
+            "type": "object",
+            "required": [
+              "identifier",
+              "name",
+              "spec",
+              "type"
+            ],
+            "properties": {
+              "description": {
+                "type": "string",
+                "desc": "This is the description for SonarqubeScanNode"
+              },
+              "enforce": {
+                "$ref": "#/definitions/pipeline/common/PolicyConfig"
+              },
+              "failureStrategies": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/pipeline/common/FailureStrategyConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "identifier": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
+              },
+              "strategy": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StrategyConfig"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "timeout": {
+                "type": "string",
+                "pattern": "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Sonarqube"
+                ]
+              },
+              "when": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StepWhenCondition"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "Sonarqube"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/steps/common/SonarqubeStepInfo"
                     }
                   }
                 }
@@ -35936,6 +36926,21 @@ const schema: Record<string, any> = {
                       }
                     ]
                   },
+                  "reuse": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "not": {
+                          "pattern": "^<\\+.*>.*$"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
                   "markNextChangeSetRun": {
                     "type": "boolean"
                   },
@@ -36171,6 +37176,21 @@ const schema: Record<string, any> = {
                       }
                     ]
                   },
+                  "reuse": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "not": {
+                          "pattern": "^<\\+.*>.*$"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
                   "resources": {
                     "$ref": "#/definitions/pipeline/common/ContainerResource"
                   },
@@ -36387,6 +37407,21 @@ const schema: Record<string, any> = {
                       }
                     ]
                   },
+                  "reuse": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "not": {
+                          "pattern": "^<\\+.*>.*$"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
                   "excludeChangeLogFile": {
                     "type": "boolean"
                   },
@@ -36494,6 +37529,21 @@ const schema: Record<string, any> = {
                   {
                     "type": "string",
                     "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\)))*$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "reuse": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "not": {
+                      "pattern": "^<\\+.*>.*$"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\))*$",
                     "minLength": 1
                   }
                 ]
@@ -36999,6 +38049,21 @@ const schema: Record<string, any> = {
                       }
                     ]
                   },
+                  "reuse": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "not": {
+                          "pattern": "^<\\+.*>.*$"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|default|regex)\\(.+?\\))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
                   "resources": {
                     "$ref": "#/definitions/pipeline/common/ContainerResource"
                   },
@@ -37105,6 +38170,21 @@ const schema: Record<string, any> = {
                   {
                     "type": "string",
                     "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|default|regex)\\(.+?\\)))*$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "reuse": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "not": {
+                      "pattern": "^<\\+.*>.*$"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|default|regex)\\(.+?\\))*$",
                     "minLength": 1
                   }
                 ]
@@ -37324,6 +38404,21 @@ const schema: Record<string, any> = {
                       }
                     ]
                   },
+                  "reuse": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "not": {
+                          "pattern": "^<\\+.*>.*$"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|default|regex)\\(.+?\\))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
                   "resources": {
                     "$ref": "#/definitions/pipeline/common/ContainerResource"
                   },
@@ -37424,6 +38519,21 @@ const schema: Record<string, any> = {
                   {
                     "type": "string",
                     "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|default|regex)\\(.+?\\)))*$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "reuse": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "not": {
+                      "pattern": "^<\\+.*>.*$"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|default|regex)\\(.+?\\))*$",
                     "minLength": 1
                   }
                 ]
@@ -37673,6 +38783,21 @@ const schema: Record<string, any> = {
                       }
                     ]
                   },
+                  "reuse": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "not": {
+                          "pattern": "^<\\+.*>.*$"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|default|regex)\\(.+?\\))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
                   "resources": {
                     "$ref": "#/definitions/pipeline/common/ContainerResource"
                   },
@@ -37803,6 +38928,21 @@ const schema: Record<string, any> = {
                   {
                     "type": "string",
                     "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|default|regex)\\(.+?\\)))*$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "reuse": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "not": {
+                      "pattern": "^<\\+.*>.*$"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|default|regex)\\(.+?\\))*$",
                     "minLength": 1
                   }
                 ]
@@ -38026,6 +39166,21 @@ const schema: Record<string, any> = {
                       }
                     ]
                   },
+                  "reuse": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "not": {
+                          "pattern": "^<\\+.*>.*$"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
                   "resources": {
                     "$ref": "#/definitions/pipeline/common/ContainerResource"
                   },
@@ -38047,6 +39202,92 @@ const schema: Record<string, any> = {
               }
             ],
             "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "fme-change-proposal-common-resource-type": {
+            "title": "fme-change-proposal-common-resource-type",
+            "type": "string",
+            "description": "Change Proposal Resource Type",
+            "enum": [
+              "configMetadata",
+              "configDefinition"
+            ]
+          },
+          "fme-change-proposal-common-resource-id": {
+            "title": "fme-change-proposal-common-resource-id",
+            "type": "string",
+            "description": "Change Proposal Resource Id - accepts either a UUID or a ULID",
+            "oneOf": [
+              {
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+              },
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+              }
+            ],
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "fme-change-proposal-common-change": {
+            "title": "fme-change-proposal-common-change",
+            "type": "object",
+            "description": "A single JSON Patch-style change operation (RFC 6902), with an optional previousValue for audit purposes",
+            "required": [
+              "op",
+              "path"
+            ],
+            "properties": {
+              "op": {
+                "type": "string",
+                "description": "The patch operation to apply",
+                "enum": [
+                  "add",
+                  "replace",
+                  "remove"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "description": "JSON Pointer (RFC 6901) to the target location. Empty string represents the root document"
+              },
+              "value": {
+                "description": "New value to set. Required for add/replace, not used for remove. Can be any JSON type (object, string, number, array, boolean, null)"
+              },
+              "previousValue": {
+                "description": "Previous value before this change was applied, for audit/validation purposes. Can be any JSON type, including null"
+              }
+            },
+            "additionalProperties": false,
+            "if": {
+              "properties": {
+                "op": {
+                  "enum": [
+                    "add",
+                    "replace"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "op",
+                "path",
+                "value"
+              ]
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "fme-change-proposal-common-title": {
+            "title": "fme-change-proposal-common-title",
+            "type": "string",
+            "description": "Change Proposal Title",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "fme-change-proposal-common-comment": {
+            "title": "fme-change-proposal-common-comment",
+            "type": "string",
+            "description": "Change Proposal Comment",
+            "minLength": 1,
+            "maxLength": 480
           },
           "fme-flag-common-flag-name": {
             "title": "fme-flag-common-flag-name",
@@ -40141,101 +41382,6 @@ const schema: Record<string, any> = {
               }
             ]
           },
-          "GitleaksScanNode": {
-            "title": "GitleaksScanNode",
-            "type": "object",
-            "required": [
-              "identifier",
-              "name",
-              "spec",
-              "type"
-            ],
-            "properties": {
-              "description": {
-                "type": "string",
-                "desc": "This is the description for GitleaksScanNode"
-              },
-              "enforce": {
-                "$ref": "#/definitions/pipeline/common/PolicyConfig"
-              },
-              "failureStrategies": {
-                "oneOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/definitions/pipeline/common/FailureStrategyConfig"
-                    }
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "^<\\+input>$",
-                    "minLength": 1
-                  }
-                ]
-              },
-              "identifier": {
-                "type": "string",
-                "pattern": "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
-              },
-              "name": {
-                "type": "string",
-                "pattern": "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
-              },
-              "strategy": {
-                "oneOf": [
-                  {
-                    "$ref": "#/definitions/pipeline/common/StrategyConfig"
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "^<\\+input>$",
-                    "minLength": 1
-                  }
-                ]
-              },
-              "timeout": {
-                "type": "string",
-                "pattern": "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "Gitleaks"
-                ]
-              },
-              "when": {
-                "oneOf": [
-                  {
-                    "$ref": "#/definitions/pipeline/common/StepWhenCondition"
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "^<\\+input>$",
-                    "minLength": 1
-                  }
-                ]
-              }
-            },
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "allOf": [
-              {
-                "if": {
-                  "properties": {
-                    "type": {
-                      "const": "Gitleaks"
-                    }
-                  }
-                },
-                "then": {
-                  "properties": {
-                    "spec": {
-                      "$ref": "#/definitions/pipeline/steps/common/GitleaksStepInfo"
-                    }
-                  }
-                }
-              }
-            ]
-          },
           "GrypeScanNode": {
             "title": "GrypeScanNode",
             "type": "object",
@@ -41946,101 +43092,6 @@ const schema: Record<string, any> = {
               }
             ]
           },
-          "SonarqubeScanNode": {
-            "title": "SonarqubeScanNode",
-            "type": "object",
-            "required": [
-              "identifier",
-              "name",
-              "spec",
-              "type"
-            ],
-            "properties": {
-              "description": {
-                "type": "string",
-                "desc": "This is the description for SonarqubeScanNode"
-              },
-              "enforce": {
-                "$ref": "#/definitions/pipeline/common/PolicyConfig"
-              },
-              "failureStrategies": {
-                "oneOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/definitions/pipeline/common/FailureStrategyConfig"
-                    }
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "^<\\+input>$",
-                    "minLength": 1
-                  }
-                ]
-              },
-              "identifier": {
-                "type": "string",
-                "pattern": "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
-              },
-              "name": {
-                "type": "string",
-                "pattern": "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
-              },
-              "strategy": {
-                "oneOf": [
-                  {
-                    "$ref": "#/definitions/pipeline/common/StrategyConfig"
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "^<\\+input>$",
-                    "minLength": 1
-                  }
-                ]
-              },
-              "timeout": {
-                "type": "string",
-                "pattern": "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "Sonarqube"
-                ]
-              },
-              "when": {
-                "oneOf": [
-                  {
-                    "$ref": "#/definitions/pipeline/common/StepWhenCondition"
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "^<\\+input>$",
-                    "minLength": 1
-                  }
-                ]
-              }
-            },
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "allOf": [
-              {
-                "if": {
-                  "properties": {
-                    "type": {
-                      "const": "Sonarqube"
-                    }
-                  }
-                },
-                "then": {
-                  "properties": {
-                    "spec": {
-                      "$ref": "#/definitions/pipeline/steps/common/SonarqubeStepInfo"
-                    }
-                  }
-                }
-              }
-            ]
-          },
           "SysdigScanNode": {
             "title": "SysdigScanNode",
             "type": "object",
@@ -43172,6 +44223,101 @@ const schema: Record<string, any> = {
                   "properties": {
                     "spec": {
                       "$ref": "#/definitions/pipeline/steps/common/MythosAgentStepInfo"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "ClaudeCodeSecurityNode": {
+            "title": "ClaudeCodeSecurityNode",
+            "type": "object",
+            "required": [
+              "identifier",
+              "name",
+              "spec",
+              "type"
+            ],
+            "properties": {
+              "description": {
+                "type": "string",
+                "desc": "This is the description for ClaudeCodeSecurityNode"
+              },
+              "enforce": {
+                "$ref": "#/definitions/pipeline/common/PolicyConfig"
+              },
+              "failureStrategies": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/pipeline/common/FailureStrategyConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "identifier": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
+              },
+              "strategy": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StrategyConfig"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "timeout": {
+                "type": "string",
+                "pattern": "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ClaudeCodeSecurity"
+                ]
+              },
+              "when": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StepWhenCondition"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "ClaudeCodeSecurity"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/steps/common/ClaudeCodeSecurityStepInfo"
                     }
                   }
                 }
@@ -55665,6 +56811,18 @@ const schema: Record<string, any> = {
                         "minLength": 1
                       }
                     ]
+                  },
+                  "filters": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/iacm/AnsibleFilters"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|default|regex)\\(.+?\\)))*$",
+                        "minLength": 1
+                      }
+                    ]
                   }
                 }
               }
@@ -55722,8 +56880,63 @@ const schema: Record<string, any> = {
                 "items": {
                   "$ref": "#/definitions/pipeline/steps/iacm/ImportCommandParameterField"
                 }
+              },
+              "filters": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/steps/iacm/AnsibleFilters"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|default|regex)\\(.+?\\)))*$",
+                    "minLength": 1
+                  }
+                ]
               }
             }
+          },
+          "AnsibleFilters": {
+            "title": "AnsibleFilters",
+            "type": "object",
+            "properties": {
+              "tags": {
+                "description": "Only run tasks and roles carrying one of these tags.",
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|default|regex)\\(.+?\\)))*$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "skipTags": {
+                "description": "Skip tasks and roles carrying one of these tags. Takes precedence over tags.",
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|default|regex)\\(.+?\\)))*$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "limit": {
+                "description": "Restrict the run to matching hosts. A single ansible host pattern, e.g. \"web,db:!staging\".",
+                "type": "string"
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#"
           },
           "IACMRemediationAgentStepNode": {
             "title": "IACMRemediationAgentStepNode",
@@ -55874,6 +57087,9 @@ const schema: Record<string, any> = {
                         "pattern": "^<\\+.*>$"
                       }
                     ]
+                  },
+                  "insightId": {
+                    "type": "string"
                   }
                 }
               }
@@ -55926,6 +57142,9 @@ const schema: Record<string, any> = {
                     "pattern": "^<\\+.*>$"
                   }
                 ]
+              },
+              "insightId": {
+                "type": "string"
               }
             }
           }
@@ -60334,10 +61553,19 @@ const schema: Record<string, any> = {
                     "type": "string"
                   },
                   "gitFetchType": {
-                    "type": "string",
-                    "enum": [
-                      "Branch",
-                      "Commit"
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Branch",
+                          "Commit"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
                     ]
                   },
                   "paths": {
@@ -60359,20 +61587,6 @@ const schema: Record<string, any> = {
                     "type": "string"
                   }
                 }
-              },
-              {
-                "oneOf": [
-                  {
-                    "required": [
-                      "commitId"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "branch"
-                    ]
-                  }
-                ]
               },
               {
                 "oneOf": [
@@ -60422,10 +61636,19 @@ const schema: Record<string, any> = {
                     "type": "string"
                   },
                   "gitFetchType": {
-                    "type": "string",
-                    "enum": [
-                      "Branch",
-                      "Commit"
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Branch",
+                          "Commit"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
                     ]
                   },
                   "paths": {
@@ -60447,20 +61670,6 @@ const schema: Record<string, any> = {
                     "type": "string"
                   }
                 }
-              },
-              {
-                "oneOf": [
-                  {
-                    "required": [
-                      "commitId"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "branch"
-                    ]
-                  }
-                ]
               },
               {
                 "oneOf": [
@@ -60588,10 +61797,19 @@ const schema: Record<string, any> = {
                     "type": "string"
                   },
                   "gitFetchType": {
-                    "type": "string",
-                    "enum": [
-                      "Branch",
-                      "Commit"
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Branch",
+                          "Commit"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
                     ]
                   },
                   "paths": {
@@ -60613,20 +61831,6 @@ const schema: Record<string, any> = {
                     "type": "string"
                   }
                 }
-              },
-              {
-                "oneOf": [
-                  {
-                    "required": [
-                      "commitId"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "branch"
-                    ]
-                  }
-                ]
               },
               {
                 "oneOf": [
@@ -60676,10 +61880,19 @@ const schema: Record<string, any> = {
                     "type": "string"
                   },
                   "gitFetchType": {
-                    "type": "string",
-                    "enum": [
-                      "Branch",
-                      "Commit"
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Branch",
+                          "Commit"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
                     ]
                   },
                   "paths": {
@@ -60701,20 +61914,6 @@ const schema: Record<string, any> = {
                     "type": "string"
                   }
                 }
-              },
-              {
-                "oneOf": [
-                  {
-                    "required": [
-                      "commitId"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "branch"
-                    ]
-                  }
-                ]
               },
               {
                 "oneOf": [
@@ -60764,10 +61963,19 @@ const schema: Record<string, any> = {
                     "type": "string"
                   },
                   "gitFetchType": {
-                    "type": "string",
-                    "enum": [
-                      "Branch",
-                      "Commit"
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Branch",
+                          "Commit"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
                     ]
                   },
                   "paths": {
@@ -60789,20 +61997,6 @@ const schema: Record<string, any> = {
                     "type": "string"
                   }
                 }
-              },
-              {
-                "oneOf": [
-                  {
-                    "required": [
-                      "commitId"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "branch"
-                    ]
-                  }
-                ]
               },
               {
                 "oneOf": [
@@ -61284,10 +62478,19 @@ const schema: Record<string, any> = {
                     "type": "string"
                   },
                   "gitFetchType": {
-                    "type": "string",
-                    "enum": [
-                      "Branch",
-                      "Commit"
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Branch",
+                          "Commit"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
                     ]
                   },
                   "paths": {
@@ -61309,20 +62512,6 @@ const schema: Record<string, any> = {
                     "type": "string"
                   }
                 }
-              },
-              {
-                "oneOf": [
-                  {
-                    "required": [
-                      "commitId"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "branch"
-                    ]
-                  }
-                ]
               },
               {
                 "oneOf": [
@@ -65659,7 +66848,6 @@ const schema: Record<string, any> = {
               "provider": {
                 "type": "string",
                 "enum": [
-                  "smi",
                   "istio"
                 ]
               },
@@ -65668,22 +66856,6 @@ const schema: Record<string, any> = {
               }
             },
             "allOf": [
-              {
-                "if": {
-                  "properties": {
-                    "provider": {
-                      "const": "smi"
-                    }
-                  }
-                },
-                "then": {
-                  "properties": {
-                    "spec": {
-                      "$ref": "#/definitions/pipeline/steps/cd/SMIProviderSpec"
-                    }
-                  }
-                }
-              },
               {
                 "if": {
                   "properties": {
@@ -65702,8 +66874,8 @@ const schema: Record<string, any> = {
               }
             ]
           },
-          "SMIProviderSpec": {
-            "title": "SMIProviderSpec",
+          "IstioProviderSpec": {
+            "title": "IstioProviderSpec",
             "allOf": [
               {
                 "$ref": "#/definitions/pipeline/steps/cd/K8sTrafficRoutingProviderBaseSpec"
@@ -65711,8 +66883,51 @@ const schema: Record<string, any> = {
               {
                 "type": "object",
                 "properties": {
-                  "rootService": {
-                    "type": "string"
+                  "gateways": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "minItems": 1
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\)))*$",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "hosts": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "minItems": 1
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "delegateService": {
+                    "oneOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
+                    ]
                   }
                 }
               }
@@ -66214,66 +67429,6 @@ const schema: Record<string, any> = {
               }
             ]
           },
-          "IstioProviderSpec": {
-            "title": "IstioProviderSpec",
-            "allOf": [
-              {
-                "$ref": "#/definitions/pipeline/steps/cd/K8sTrafficRoutingProviderBaseSpec"
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "gateways": {
-                    "oneOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "minItems": 1
-                      },
-                      {
-                        "type": "string",
-                        "pattern": "^<\\+input>((\\.)((executionInput\\(\\))|(allowedValues|selectOneFrom|selectManyFrom|default|regex)\\(.+?\\)))*$",
-                        "minLength": 1
-                      }
-                    ]
-                  },
-                  "hosts": {
-                    "oneOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "minItems": 1
-                      },
-                      {
-                        "type": "string",
-                        "pattern": "(<\\+.+>.*)",
-                        "minLength": 1
-                      }
-                    ]
-                  },
-                  "delegateService": {
-                    "oneOf": [
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "string",
-                        "pattern": "(<\\+.+>.*)",
-                        "minLength": 1
-                      }
-                    ]
-                  }
-                }
-              }
-            ],
-            "$schema": "http://json-schema.org/draft-07/schema#"
-          },
           "TerraformRollbackStepNode": {
             "title": "TerraformRollbackStepNode",
             "type": "object",
@@ -66607,6 +67762,21 @@ const schema: Record<string, any> = {
                   "prodListenerRuleArn": {
                     "type": "string"
                   },
+                  "prodListenerRuleConfigs": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/pipeline/steps/cd/ProdListenerRuleConfig"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
+                    ]
+                  },
                   "sameAsAlreadyRunningInstances": {
                     "oneOf": [
                       {
@@ -66690,6 +67860,21 @@ const schema: Record<string, any> = {
               "prodListenerRuleArn": {
                 "type": "string"
               },
+              "prodListenerRuleConfigs": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/pipeline/steps/cd/ProdListenerRuleConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "(<\\+.+>.*)",
+                    "minLength": 1
+                  }
+                ]
+              },
               "sameAsAlreadyRunningInstances": {
                 "oneOf": [
                   {
@@ -66730,6 +67915,27 @@ const schema: Record<string, any> = {
                 "desc": "This is the description for EcsBlueGreenCreateServiceStepInfo"
               }
             }
+          },
+          "ProdListenerRuleConfig": {
+            "title": "ProdListenerRuleConfig",
+            "type": "object",
+            "required": [
+              "prodListenerRuleArn"
+            ],
+            "properties": {
+              "prodListenerRuleArn": {
+                "type": "string",
+                "pattern": "^(?=\\s*\\S).*$"
+              },
+              "stageTargetGroupArn": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string",
+                "desc": "This is the description for ProdListenerRuleConfig"
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#"
           },
           "EcsUpgradeContainerStepNode": {
             "title": "EcsUpgradeContainerStepNode",
@@ -74959,7 +76165,8 @@ const schema: Record<string, any> = {
                   "GoogleMigInstanceTemplate",
                   "GoogleMigConfiguration",
                   "GoogleMigAutoscalerConfiguration",
-                  "GoogleMigHealthCheckConfiguration"
+                  "GoogleMigHealthCheckConfiguration",
+                  "AgentConfig"
                 ]
               },
               "description": {
@@ -75476,6 +76683,22 @@ const schema: Record<string, any> = {
                   "properties": {
                     "spec": {
                       "$ref": "#/definitions/pipeline/steps/cd/GoogleMigHealthCheckConfiguration"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "AgentConfig"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/steps/cd/AgentConfigManifest"
                     }
                   }
                 }
@@ -76630,6 +77853,31 @@ const schema: Record<string, any> = {
             "properties": {
               "description": {
                 "desc": "This is the description for GoogleMigHealthCheckConfiguration"
+              }
+            }
+          },
+          "AgentConfigManifest": {
+            "title": "AgentConfigManifest",
+            "allOf": [
+              {
+                "$ref": "#/definitions/pipeline/steps/cd/ManifestAttributes"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "metadata": {
+                    "type": "string"
+                  },
+                  "store": {
+                    "$ref": "#/definitions/pipeline/steps/cd/StoreConfigWrapper"
+                  }
+                }
+              }
+            ],
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "properties": {
+              "description": {
+                "desc": "This is the description for AgentConfigManifest"
               }
             }
           },
@@ -99951,6 +101199,10 @@ const schema: Record<string, any> = {
                   "weightPercentage"
                 ],
                 "properties": {
+                  "loadBalancer": {
+                    "type": "string",
+                    "pattern": "^(?=\\s*\\S).*$"
+                  },
                   "weightPercentage": {
                     "oneOf": [
                       {
@@ -99965,6 +101217,42 @@ const schema: Record<string, any> = {
                         "minLength": 1
                       }
                     ]
+                  },
+                  "ruleOverrides": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/pipeline/steps/cd/InheritRuleOverride"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "(<\\+.+>.*)",
+                        "minLength": 1
+                      }
+                    ]
+                  },
+                  "downsizeOldService": {
+                    "oneOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "downsizeOldServiceDelayInSecs": {
+                    "oneOf": [
+                      {
+                        "type": "integer",
+                        "format": "int32"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
                   }
                 }
               }
@@ -99975,6 +101263,39 @@ const schema: Record<string, any> = {
                 "desc": "This is the description for InheritEcsTrafficShiftSpec"
               }
             }
+          },
+          "InheritRuleOverride": {
+            "title": "InheritRuleOverride",
+            "type": "object",
+            "required": [
+              "listenerRuleArn"
+            ],
+            "properties": {
+              "listenerRuleArn": {
+                "type": "string",
+                "pattern": "^(?=\\s*\\S).*$"
+              },
+              "weightPercentage": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "(<\\+.+>.*)",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "description": {
+                "type": "string",
+                "desc": "This is the description for InheritRuleOverride"
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#"
           },
           "StandAloneTrafficShiftRollbackStepNode": {
             "title": "StandAloneTrafficShiftRollbackStepNode",
@@ -104187,6 +105508,492 @@ const schema: Record<string, any> = {
             "$schema": "http://json-schema.org/draft-07/schema#"
           }
         },
+        "aisre": {
+          "AisreCreateIncidentStepNode": {
+            "title": "AisreCreateIncidentStepNode",
+            "type": "object",
+            "required": [
+              "identifier",
+              "name",
+              "spec",
+              "type"
+            ],
+            "properties": {
+              "description": {
+                "type": "string",
+                "desc": "This is the description for AisreCreateIncidentStepNode"
+              },
+              "enforce": {
+                "$ref": "#/definitions/pipeline/common/PolicyConfig"
+              },
+              "failureStrategies": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/pipeline/common/FailureStrategyConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "identifier": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
+              },
+              "strategy": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StrategyConfig"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "timeout": {
+                "type": "string",
+                "pattern": "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AISRE_CreateIncident"
+                ]
+              },
+              "when": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StepWhenCondition"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "AISRE_CreateIncident"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/steps/aisre/AisreCreateIncidentStepInfo"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "AisreCreateIncidentStepInfo": {
+            "title": "AisreCreateIncidentStepInfo",
+            "allOf": [
+              {
+                "$ref": "#/definitions/pipeline/common/StepSpecType"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "title",
+                  "orgIdentifier",
+                  "projectIdentifier",
+                  "incidentType",
+                  "severity",
+                  "service"
+                ],
+                "properties": {
+                  "title": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "orgIdentifier": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "projectIdentifier": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "incidentType": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "severity": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "service": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "environment": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "description": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "commanderHarnessUserId": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "labels": {
+                    "description": "Incident labels",
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "attachPipelineContext": {
+                    "oneOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "pageOnCall": {
+                    "oneOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "additionalImpactedServices": {
+                    "description": "Additional impacted Harness service identifiers",
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "fields": {
+                    "description": "Incident-type specific fields keyed by field identifier",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "AisreCreateAlertStepNode": {
+            "title": "AisreCreateAlertStepNode",
+            "type": "object",
+            "required": [
+              "identifier",
+              "name",
+              "spec",
+              "type"
+            ],
+            "properties": {
+              "description": {
+                "type": "string",
+                "desc": "This is the description for AisreCreateAlertStepNode"
+              },
+              "enforce": {
+                "$ref": "#/definitions/pipeline/common/PolicyConfig"
+              },
+              "failureStrategies": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/pipeline/common/FailureStrategyConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "identifier": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_][0-9a-zA-Z_]{0,127}$"
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
+              },
+              "strategy": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StrategyConfig"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "timeout": {
+                "type": "string",
+                "pattern": "^(([1-9])+\\d+[s])|(((([1-9])+\\d*[mhwd])+([\\s]?\\d+[smhwd])*)|(.*<\\+.*>(?!.*\\.executionInput\\(\\)).*)|(^$))$"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "AISRE_CreateAlert"
+                ]
+              },
+              "when": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/pipeline/common/StepWhenCondition"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^<\\+input>$",
+                    "minLength": 1
+                  }
+                ]
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "AISRE_CreateAlert"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/steps/aisre/AisreCreateAlertStepInfo"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "AisreCreateAlertStepInfo": {
+            "title": "AisreCreateAlertStepInfo",
+            "allOf": [
+              {
+                "$ref": "#/definitions/pipeline/common/StepSpecType"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "title",
+                  "orgIdentifier",
+                  "projectIdentifier",
+                  "status"
+                ],
+                "properties": {
+                  "alertId": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "title": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "orgIdentifier": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "projectIdentifier": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "priority": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "service": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "environment": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  },
+                  "description": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/string-without-jexl"
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline/steps/common/common-jexl"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          }
+        },
         "drtest": {
           "DRTestSlackNotifyStepNode": {
             "title": "DRTestSlackNotifyStepNode",
@@ -107109,6 +108916,12 @@ const schema: Record<string, any> = {
                     "$ref": "#/definitions/pipeline/steps/common/SnykScanNode"
                   },
                   {
+                    "$ref": "#/definitions/pipeline/steps/common/GitleaksScanNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/common/SonarqubeScanNode"
+                  },
+                  {
                     "$ref": "#/definitions/pipeline/steps/iacm/IACMModuleTestPluginStepNode"
                   },
                   {
@@ -107433,7 +109246,9 @@ const schema: Record<string, any> = {
                   "AzureContainerApps",
                   "Salesforce",
                   "GoogleManagedInstanceGroup",
-                  "AiAgent"
+                  "AiAgent",
+                  "AwsAgentCore",
+                  "GoogleAgentRuntime"
                 ]
               },
               "environment": {
@@ -108818,6 +110633,15 @@ const schema: Record<string, any> = {
                   },
                   {
                     "$ref": "#/definitions/pipeline/steps/common/AgentStepNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/aisre/AisreCreateIncidentStepNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/aisre/AisreCreateAlertStepNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/custom/FmeChangeProposalSubmitStepNode"
                   },
                   {
                     "$ref": "#/definitions/pipeline/steps/custom/FmeFlagCreateStepNode"
@@ -111956,7 +113780,9 @@ const schema: Record<string, any> = {
                   "AzureContainerApps",
                   "Salesforce",
                   "GoogleManagedInstanceGroup",
-                  "AiAgent"
+                  "AiAgent",
+                  "AwsAgentCore",
+                  "GoogleAgentRuntime"
                 ]
               },
               "description": {
@@ -112281,6 +114107,38 @@ const schema: Record<string, any> = {
                   "properties": {
                     "spec": {
                       "$ref": "#/definitions/pipeline/stages/cd/AiAgentServiceSpec"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "AwsAgentCore"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/stages/cd/AwsAgentCoreServiceSpec"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "GoogleAgentRuntime"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/stages/cd/GoogleAgentRuntimeServiceSpec"
                     }
                   }
                 }
@@ -116705,7 +118563,8 @@ const schema: Record<string, any> = {
               "type": {
                 "type": "string",
                 "enum": [
-                  "container"
+                  "container",
+                  "s3"
                 ]
               },
               "description": {
@@ -116729,6 +118588,22 @@ const schema: Record<string, any> = {
                     }
                   }
                 }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "s3"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "spec": {
+                      "$ref": "#/definitions/pipeline/stages/cd/S3AgentSource"
+                    }
+                  }
+                }
               }
             ]
           },
@@ -116744,6 +118619,45 @@ const schema: Record<string, any> = {
               },
               "description": {
                 "desc": "This is the description for ContainerAgentSource"
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "S3AgentSource": {
+            "title": "S3AgentSource",
+            "type": "object",
+            "required": [
+              "bucketName",
+              "key",
+              "runtime",
+              "entryPoint"
+            ],
+            "properties": {
+              "bucketName": {
+                "type": "string"
+              },
+              "key": {
+                "type": "string"
+              },
+              "versionId": {
+                "type": "string"
+              },
+              "runtime": {
+                "type": "string",
+                "enum": [
+                  "PYTHON_3_12",
+                  "PYTHON_3_13",
+                  "PYTHON_3_14"
+                ]
+              },
+              "entryPoint": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "description": {
+                "desc": "This is the description for S3AgentSource"
               }
             },
             "$schema": "http://json-schema.org/draft-07/schema#"
@@ -116801,6 +118715,72 @@ const schema: Record<string, any> = {
                 }
               }
             ]
+          },
+          "AwsAgentCoreServiceSpec": {
+            "title": "AwsAgentCoreServiceSpec",
+            "type": "object",
+            "required": [
+              "source",
+              "executionRoleArn"
+            ],
+            "properties": {
+              "configVariables": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/pipeline/common/NGVariable"
+                }
+              },
+              "variables": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/pipeline/common/NGVariable"
+                }
+              },
+              "source": {
+                "$ref": "#/definitions/pipeline/stages/cd/AwsCoreAgentSource"
+              },
+              "executionRoleArn": {
+                "type": "string"
+              },
+              "manifests": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/pipeline/steps/cd/ManifestConfigWrapper"
+                }
+              },
+              "description": {
+                "desc": "This is the description for AwsAgentCoreServiceSpec"
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "GoogleAgentRuntimeServiceSpec": {
+            "title": "GoogleAgentRuntimeServiceSpec",
+            "type": "object",
+            "required": [
+              "source"
+            ],
+            "properties": {
+              "configVariables": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/pipeline/common/NGVariable"
+                }
+              },
+              "variables": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/pipeline/common/NGVariable"
+                }
+              },
+              "source": {
+                "$ref": "#/definitions/pipeline/stages/cd/GoogleAgentSource"
+              },
+              "description": {
+                "desc": "This is the description for GoogleAgentRuntimeServiceSpec"
+              }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#"
           },
           "StageOverridesConfig": {
             "title": "StageOverridesConfig",
@@ -117780,6 +119760,9 @@ const schema: Record<string, any> = {
                     "$ref": "#/definitions/pipeline/steps/common/MythosAgentNode"
                   },
                   {
+                    "$ref": "#/definitions/pipeline/steps/common/ClaudeCodeSecurityNode"
+                  },
+                  {
                     "$ref": "#/definitions/pipeline/steps/common/SscaEnforcementStepNode"
                   },
                   {
@@ -118558,6 +120541,9 @@ const schema: Record<string, any> = {
                     "$ref": "#/definitions/pipeline/steps/common/MythosAgentNode"
                   },
                   {
+                    "$ref": "#/definitions/pipeline/steps/common/ClaudeCodeSecurityNode"
+                  },
+                  {
                     "$ref": "#/definitions/pipeline/steps/common/SscaComplianceStepNode"
                   },
                   {
@@ -119209,6 +121195,9 @@ const schema: Record<string, any> = {
                   },
                   {
                     "$ref": "#/definitions/pipeline/steps/common/AIExperimentStepNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/custom/FmeMetricCheckStepNode"
                   },
                   {
                     "$ref": "#/definitions/pipeline/steps/common/IdpActionStepNode"
@@ -120219,6 +122208,15 @@ const schema: Record<string, any> = {
                     "$ref": "#/definitions/pipeline/steps/common/WizScanNode"
                   },
                   {
+                    "$ref": "#/definitions/pipeline/steps/aisre/AisreCreateIncidentStepNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/aisre/AisreCreateAlertStepNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/custom/FmeChangeProposalSubmitStepNode"
+                  },
+                  {
                     "$ref": "#/definitions/pipeline/steps/custom/FmeFlagCreateStepNode"
                   },
                   {
@@ -121090,6 +123088,15 @@ const schema: Record<string, any> = {
                   },
                   {
                     "$ref": "#/definitions/pipeline/steps/custom/ChangeAdvisorStepNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/aisre/AisreCreateIncidentStepNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/aisre/AisreCreateAlertStepNode"
+                  },
+                  {
+                    "$ref": "#/definitions/pipeline/steps/custom/FmeChangeProposalSubmitStepNode"
                   },
                   {
                     "$ref": "#/definitions/pipeline/steps/custom/FmeFlagCreateStepNode"
