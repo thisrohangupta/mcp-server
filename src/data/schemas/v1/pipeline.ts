@@ -4,6 +4,7 @@
 const schema: Record<string, any> = {
   "type": "object",
   "title": "pipeline_v1",
+  "additionalProperties": false,
   "required": [
     "pipeline"
   ],
@@ -18,11 +19,13 @@ const schema: Record<string, any> = {
       "$ref": "#/definitions/pipeline_v1/pipeline"
     }
   },
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
     "pipeline_v1": {
       "pipeline": {
         "type": "object",
         "title": "pipeline",
+        "additionalProperties": false,
         "properties": {
           "id": {
             "type": "string",
@@ -31,6 +34,10 @@ const schema: Record<string, any> = {
           "name": {
             "type": "string",
             "pattern": "^[a-zA-Z_0-9-.][-0-9a-zA-Z_\\s.]{0,127}$"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the pipeline."
           },
           "clone": {
             "$ref": "#/definitions/pipeline_v1/Clone"
@@ -112,6 +119,7 @@ const schema: Record<string, any> = {
       "Clone": {
         "title": "Clone",
         "type": "object",
+        "additionalProperties": false,
         "description": "Clone defines the default clone behavior.",
         "properties": {
           "depth": {
@@ -843,6 +851,7 @@ const schema: Record<string, any> = {
           "title": "TemplateRef",
           "description": "Template identifier and input configuration.",
           "type": "object",
+          "additionalProperties": false,
           "required": [
             "uses"
           ],
@@ -858,6 +867,10 @@ const schema: Record<string, any> = {
             "gitBranch": {
               "description": "Git branch for remote template resolution.",
               "type": "string"
+            },
+            "container": {
+              "description": "Caller-side container overrides merged into the resolved template step. Applied for any V1 step template whose spec contains run, run-test, or background (including git-clone and build-and-push templates that wrap those steps).\n",
+              "$ref": "#/definitions/pipeline_v1/common/TemplateContainerOverlay"
             }
           },
           "$schema": "http://json-schema.org/draft-07/schema#"
@@ -876,9 +889,61 @@ const schema: Record<string, any> = {
           "additionalProperties": true,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
+        "TemplateContainerOverlay": {
+          "title": "TemplateContainerOverlay",
+          "description": "Caller-side container overrides on a V1 template step (`template.container`). Mirrors TemplateMergeServiceHelper.CONTAINER_PROPAGATION_ALLOWLIST. Applied to resolved run, run-test, and background containers (including nested group/parallel). Image, connector, and entrypoint stay on the template and are not overridable here.\n",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "user": {
+              "description": "User ID to run as. Supports expressions.",
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "group": {
+              "description": "Group to run as.",
+              "type": "string"
+            },
+            "cpu": {
+              "description": "CPU limit. Ignored when resources.limits.cpu is set.",
+              "type": "string"
+            },
+            "memory": {
+              "description": "Memory limit. Ignored when resources.limits.memory is set.",
+              "type": "string"
+            },
+            "resources": {
+              "description": "Container resource limits and requests. Takes precedence over the flat cpu/memory fields.",
+              "$ref": "#/definitions/pipeline_v1/Resource"
+            },
+            "shm-size": {
+              "description": "Shared memory size.",
+              "type": "string"
+            },
+            "privileged": {
+              "description": "Run in privileged mode. Supports expressions.",
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/definitions/pipeline_v1/common/Expression"
+                }
+              ]
+            }
+          },
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
         "StrategyConfigV1": {
           "title": "StrategyConfigV1",
           "type": "object",
+          "additionalProperties": false,
           "description": "Strategy defines execution strategy configuration (matrix, for, while, repeat).",
           "properties": {
             "max-parallel": {
@@ -906,73 +971,69 @@ const schema: Record<string, any> = {
             "if": {
               "description": "Conditional expression to determine whether the strategy should execute. Supports expressions.",
               "type": "string"
+            },
+            "matrix": {
+              "description": "Matrix strategy for parallel execution across dimensions. Supports expressions.",
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/pipeline_v1/common/MatrixConfigV1"
+                },
+                {
+                  "$ref": "#/definitions/pipeline_v1/common/Expression"
+                }
+              ]
+            },
+            "for": {
+              "description": "For-loop strategy configuration. Supports expressions.",
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/pipeline_v1/common/ForConfigV1"
+                },
+                {
+                  "$ref": "#/definitions/pipeline_v1/common/Expression"
+                }
+              ]
+            },
+            "while": {
+              "description": "While-loop strategy configuration. Supports expressions.",
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/pipeline_v1/common/WhileConfigV1"
+                },
+                {
+                  "$ref": "#/definitions/pipeline_v1/common/Expression"
+                }
+              ]
+            },
+            "repeat": {
+              "description": "Repeat strategy configuration for iterating over items. Supports expressions.",
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/pipeline_v1/common/RepeatConfigV1"
+                },
+                {
+                  "$ref": "#/definitions/pipeline_v1/common/Expression"
+                }
+              ]
             }
           },
           "oneOf": [
             {
-              "properties": {
-                "matrix": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/definitions/pipeline_v1/common/MatrixConfigV1"
-                    },
-                    {
-                      "$ref": "#/definitions/pipeline_v1/common/Expression"
-                    }
-                  ]
-                }
-              },
               "required": [
                 "matrix"
               ]
             },
             {
-              "properties": {
-                "for": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/definitions/pipeline_v1/common/ForConfigV1"
-                    },
-                    {
-                      "$ref": "#/definitions/pipeline_v1/common/Expression"
-                    }
-                  ]
-                }
-              },
               "required": [
                 "for"
               ]
             },
             {
-              "properties": {
-                "while": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/definitions/pipeline_v1/common/WhileConfigV1"
-                    },
-                    {
-                      "$ref": "#/definitions/pipeline_v1/common/Expression"
-                    }
-                  ]
-                }
-              },
               "required": [
                 "while"
               ]
             },
             {
-              "properties": {
-                "repeat": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/definitions/pipeline_v1/common/RepeatConfigV1"
-                    },
-                    {
-                      "$ref": "#/definitions/pipeline_v1/common/Expression"
-                    }
-                  ]
-                }
-              },
               "required": [
                 "repeat"
               ]
@@ -1036,6 +1097,7 @@ const schema: Record<string, any> = {
         "ForConfigV1": {
           "title": "ForConfigV1",
           "type": "object",
+          "additionalProperties": false,
           "description": "For loop strategy configuration.",
           "properties": {
             "iterations": {
@@ -1060,6 +1122,7 @@ const schema: Record<string, any> = {
         "WhileConfigV1": {
           "title": "WhileConfigV1",
           "type": "object",
+          "additionalProperties": false,
           "description": "While loop strategy configuration.",
           "properties": {
             "iterations": {
@@ -1088,6 +1151,7 @@ const schema: Record<string, any> = {
         "RepeatConfigV1": {
           "title": "RepeatConfigV1",
           "type": "object",
+          "additionalProperties": false,
           "description": "Repeat strategy configuration for iterating over items.",
           "properties": {
             "iterations": {
@@ -1188,6 +1252,7 @@ const schema: Record<string, any> = {
         "FailureConfigV1": {
           "title": "FailureConfigV1",
           "type": "object",
+          "additionalProperties": false,
           "description": "Failure strategy configuration for handling errors.",
           "required": [
             "errors",
@@ -1305,6 +1370,7 @@ const schema: Record<string, any> = {
         "RetryFailureSpecConfigV1": {
           "title": "RetryFailureSpecConfigV1",
           "type": "object",
+          "additionalProperties": false,
           "description": "Retry configuration for failure strategy.",
           "properties": {
             "attempts": {
@@ -1343,6 +1409,7 @@ const schema: Record<string, any> = {
         "ManualFailureSpecConfigV1": {
           "title": "ManualFailureSpecConfigV1",
           "type": "object",
+          "additionalProperties": false,
           "description": "Manual intervention configuration for failure strategy.",
           "properties": {
             "timeout": {
@@ -1366,6 +1433,7 @@ const schema: Record<string, any> = {
         "RetryStepGroupFailureSpecConfigV1": {
           "title": "RetryStepGroupFailureSpecConfigV1",
           "type": "object",
+          "additionalProperties": false,
           "description": "Retry step group configuration for failure strategy.",
           "properties": {
             "attempts": {
@@ -1401,6 +1469,7 @@ const schema: Record<string, any> = {
           "title": "OutputV1",
           "description": "Output variable definition for capturing step outputs.",
           "type": "object",
+          "additionalProperties": false,
           "required": [
             "name"
           ],
@@ -1439,6 +1508,7 @@ const schema: Record<string, any> = {
           "title": "UnifiedTemplate",
           "description": "Template reference for steps, stages, or pipelines.",
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "id": {
               "type": "string",
@@ -1478,6 +1548,10 @@ const schema: Record<string, any> = {
             },
             "sto": {
               "$ref": "#/definitions/pipeline_v1/common/TemplateRef"
+            },
+            "ai-eval": {
+              "description": "Alias for AI evaluation step template.",
+              "$ref": "#/definitions/pipeline_v1/common/TemplateRef"
             }
           },
           "$schema": "http://json-schema.org/draft-07/schema#"
@@ -1514,6 +1588,7 @@ const schema: Record<string, any> = {
         "title": "Reference",
         "description": "Reference defines a git clone reference.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "name": {
             "description": "Name provides ref name (branch name, tag name, or PR number).",
@@ -1552,6 +1627,7 @@ const schema: Record<string, any> = {
       "Resource": {
         "title": "Resource",
         "type": "object",
+        "additionalProperties": false,
         "description": "Resource defines container resource limits and requests.",
         "properties": {
           "limits": {
@@ -1568,6 +1644,7 @@ const schema: Record<string, any> = {
       "ResourceLimits": {
         "title": "ResourceLimits",
         "type": "object",
+        "additionalProperties": false,
         "description": "ResourceLimits defines CPU and memory constraints.",
         "properties": {
           "cpu": {
@@ -1587,6 +1664,7 @@ const schema: Record<string, any> = {
         "title": "Repository",
         "description": "Repository defines a remote git repository.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "connector": {
             "description": "Connector provides the repository connector.",
@@ -1596,7 +1674,8 @@ const schema: Record<string, any> = {
             "description": "Name provides the repository name.",
             "type": "string"
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "On": {
         "title": "On",
@@ -1651,6 +1730,7 @@ const schema: Record<string, any> = {
         "title": "BranchFilter",
         "description": "BranchFilter defines branch filtering for push and pull_request events.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "branches": {
             "type": "array",
@@ -1665,6 +1745,7 @@ const schema: Record<string, any> = {
         "title": "NotificationRules",
         "description": "NotificationRules defines notification configuration for pipeline events.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "id": {
             "type": "string",
@@ -1806,6 +1887,7 @@ const schema: Record<string, any> = {
         "title": "NotificationEvent",
         "description": "NotificationEvent defines event types that trigger notifications.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "pipeline": {
             "description": "Pipeline-level events.",
@@ -1968,6 +2050,7 @@ const schema: Record<string, any> = {
         "title": "PmsEmailChannel",
         "description": "Email notification channel configuration.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "user-groups": {
             "description": "List of user group references.",
@@ -1997,6 +2080,7 @@ const schema: Record<string, any> = {
         "title": "PmsSlackChannel",
         "description": "Slack notification channel configuration.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "user-groups": {
             "description": "List of user group references.",
@@ -2023,6 +2107,7 @@ const schema: Record<string, any> = {
         "title": "PmsMSTeamChannel",
         "description": "Microsoft Teams notification channel configuration.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "keys": {
             "description": "List of MS Teams webhook keys.",
@@ -2052,6 +2137,7 @@ const schema: Record<string, any> = {
         "title": "PmsWebhookChannel",
         "description": "Webhook notification channel configuration.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "url": {
             "description": "Webhook URL.",
@@ -2071,6 +2157,7 @@ const schema: Record<string, any> = {
         "title": "PmsPagerDutyChannel",
         "description": "PagerDuty notification channel configuration.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "user-groups": {
             "description": "List of user group references.",
@@ -2097,6 +2184,7 @@ const schema: Record<string, any> = {
         "title": "PmsDatadogChannel",
         "description": "Datadog notification channel configuration.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "api-key": {
             "description": "Datadog API key.",
@@ -2326,6 +2414,7 @@ const schema: Record<string, any> = {
             "title": "UnifiedStageNodeV1",
             "description": "Unified stage node supporting CI, CD, IaCM and other stage types.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "steps"
             ],
@@ -2352,10 +2441,6 @@ const schema: Record<string, any> = {
               "if": {
                 "type": "string",
                 "description": "Conditional execution expression. Stage is skipped if condition resolves to false."
-              },
-              "variables": {
-                "description": "Stage-level variables.",
-                "$ref": "#/definitions/pipeline_v1/common/NGVariableV1Wrapper"
               },
               "inputs": {
                 "description": "Stage-level input variables.",
@@ -2506,6 +2591,11 @@ const schema: Record<string, any> = {
                     "$ref": "#/definitions/pipeline_v1/common/Expression"
                   }
                 ]
+              },
+              "permissions": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "scoped permissions definition at stage"
               }
             },
             "$schema": "http://json-schema.org/draft-07/schema#"
@@ -2543,6 +2633,10 @@ const schema: Record<string, any> = {
                   "kubernetes": {
                     "description": "Kubernetes runtime specification.",
                     "$ref": "#/definitions/pipeline_v1/stages/unified/K8RuntimeSpec"
+                  },
+                  "delegate": {
+                    "description": "Delegate selectors used for Kubernetes inherit-from-delegate authentication.",
+                    "$ref": "#/definitions/pipeline_v1/common/Delegate"
                   }
                 }
               }
@@ -2811,6 +2905,7 @@ const schema: Record<string, any> = {
             "title": "Toleration",
             "description": "Kubernetes pod toleration.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "effect": {
                 "description": "Toleration effect. Supports expressions.",
@@ -2847,6 +2942,7 @@ const schema: Record<string, any> = {
             "title": "CIVolumeV1",
             "description": "CI volume configuration. Type determined by 'uses' property.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "uses",
               "with"
@@ -2866,6 +2962,10 @@ const schema: Record<string, any> = {
                   "config-map",
                   "secret"
                 ]
+              },
+              "with": {
+                "description": "Volume-specific configuration; shape determined by `uses`.",
+                "type": "object"
               }
             },
             "allOf": [
@@ -2956,6 +3056,7 @@ const schema: Record<string, any> = {
             "title": "EmptyDirYamlV1Spec",
             "description": "EmptyDir volume specification.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "mount-path"
             ],
@@ -2979,6 +3080,7 @@ const schema: Record<string, any> = {
             "title": "PersistentVolumeClaimYamlSpecV1",
             "description": "PersistentVolumeClaim volume specification.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "mount-path",
               "claim-name"
@@ -3010,6 +3112,7 @@ const schema: Record<string, any> = {
             "title": "HostPathYamlSpecV1",
             "description": "HostPath volume specification.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "mount-path",
               "path"
@@ -3034,6 +3137,7 @@ const schema: Record<string, any> = {
             "title": "ConfigMapVolumeYamlSpecV1",
             "description": "ConfigMap volume specification.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "mount-path",
               "name"
@@ -3065,6 +3169,7 @@ const schema: Record<string, any> = {
             "title": "SecretVolumeYamlSpecV1",
             "description": "Secret volume specification.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "mount-path",
               "name"
@@ -3096,6 +3201,7 @@ const schema: Record<string, any> = {
             "title": "SecurityContextV1",
             "description": "Kubernetes pod security context.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "allow-privilege-escalation": {
                 "description": "Whether to allow privilege escalation. Supports expressions.",
@@ -3185,6 +3291,7 @@ const schema: Record<string, any> = {
             "title": "Capabilities",
             "description": "Container capabilities configuration.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "add": {
                 "description": "Capabilities to add. Supports expressions.",
@@ -3307,7 +3414,9 @@ const schema: Record<string, any> = {
               "ecs",
               "asg",
               "aws-lambda",
-              "azure-container-apps"
+              "azure-container-apps",
+              "aws-agent-core",
+              "google-agent-runtime"
             ],
             "$schema": "http://json-schema.org/draft-07/schema#"
           },
@@ -3361,6 +3470,10 @@ const schema: Record<string, any> = {
                     "description": "Environment identifier.",
                     "type": "string"
                   },
+                  "all-infra": {
+                    "description": "Deploy to all infrastructures in the environment. With a `deploy-to` runtime input sibling, every infrastructure is preselected in the run form; with no `deploy-to` sibling, deploys to all without prompting.",
+                    "type": "boolean"
+                  },
                   "deploy-to": {
                     "description": "Infrastructure(s) to deploy to.",
                     "$ref": "#/definitions/pipeline_v1/stages/unified/DeployTo"
@@ -3404,7 +3517,7 @@ const schema: Record<string, any> = {
                 ],
                 "properties": {
                   "group": {
-                    "description": "Environment group configuration.",
+                    "description": "Environment group configuration, or an expression (e.g. <+input>).",
                     "$ref": "#/definitions/pipeline_v1/stages/unified/EnvironmentGroup"
                   },
                   "parallel": {
@@ -3525,6 +3638,10 @@ const schema: Record<string, any> = {
               "ref": {
                 "description": "Git branch for the environment configuration.",
                 "type": "string"
+              },
+              "all-infra": {
+                "description": "Deploy to all infrastructures in the environment. With a `deploy-to` runtime input sibling, every infrastructure is preselected in the run form; with no `deploy-to` sibling, deploys to all without prompting.",
+                "type": "boolean"
               },
               "deploy-to": {
                 "description": "Infrastructure(s) to deploy to.",
@@ -3681,44 +3798,56 @@ const schema: Record<string, any> = {
           },
           "EnvironmentGroup": {
             "title": "EnvironmentGroup",
-            "description": "Environment group configuration.",
-            "type": "object",
-            "required": [
-              "id"
-            ],
-            "properties": {
-              "id": {
-                "description": "Environment group identifier.",
-                "type": "string"
-              },
-              "parallel": {
-                "description": "Execute environments in parallel (all at once). Defaults to false, so environments run one at a time (serially) unless set to true.",
-                "oneOf": [
-                  {
-                    "type": "boolean",
-                    "default": false
+            "description": "Environment group configuration, or an expression.",
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "description": "Environment group identifier.",
+                    "type": "string"
                   },
-                  {
-                    "$ref": "#/definitions/pipeline_v1/common/Expression"
+                  "all-env": {
+                    "description": "Deploy to all environments in the group. With an `items` runtime input sibling, every environment is preselected in the run form; with no `items` sibling, deploys to all without prompting.",
+                    "type": "boolean"
+                  },
+                  "parallel": {
+                    "description": "Execute environments in parallel (all at once). Defaults to false, so environments run one at a time (serially) unless set to true.",
+                    "oneOf": [
+                      {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      {
+                        "$ref": "#/definitions/pipeline_v1/common/Expression"
+                      }
+                    ]
+                  },
+                  "items": {
+                    "description": "List of environments from the group.",
+                    "$ref": "#/definitions/pipeline_v1/stages/unified/EnvironmentItems"
+                  },
+                  "filters": {
+                    "description": "Filters for selecting environments and infrastructures.",
+                    "$ref": "#/definitions/pipeline_v1/stages/unified/Filters"
                   }
-                ]
+                },
+                "additionalProperties": false
               },
-              "items": {
-                "description": "List of environments from the group.",
-                "$ref": "#/definitions/pipeline_v1/stages/unified/EnvironmentItems"
-              },
-              "filters": {
-                "description": "Filters for selecting environments and infrastructures.",
-                "$ref": "#/definitions/pipeline_v1/stages/unified/Filters"
+              {
+                "$ref": "#/definitions/pipeline_v1/common/Expression"
               }
-            },
-            "additionalProperties": false,
+            ],
             "$schema": "http://json-schema.org/draft-07/schema#"
           },
           "CachingV1": {
             "title": "CachingV1",
             "description": "Cache intelligence configuration.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "enabled": {
                 "description": "Whether caching is enabled. Supports expressions.",
@@ -3731,7 +3860,7 @@ const schema: Record<string, any> = {
                   }
                 ]
               },
-              "path": {
+              "paths": {
                 "description": "Paths to cache. Supports expressions.",
                 "oneOf": [
                   {
@@ -3761,6 +3890,41 @@ const schema: Record<string, any> = {
                   "push",
                   "pull-push"
                 ]
+              },
+              "connector": {
+                "description": "Cache storage connector. Supports expressions.",
+                "type": "string"
+              },
+              "region": {
+                "description": "Cache storage region. Supports expressions.",
+                "type": "string"
+              },
+              "bucket_name": {
+                "description": "Cache storage bucket name. Supports expressions.",
+                "type": "string"
+              },
+              "container_name": {
+                "description": "Cache storage container name. Supports expressions.",
+                "type": "string"
+              },
+              "storage_account": {
+                "description": "Cache storage account name. Supports expressions.",
+                "type": "string"
+              },
+              "user": {
+                "description": "User ID to run cache containers as. Supports expressions.",
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "resources": {
+                "description": "Cache container resource limits and requests.",
+                "$ref": "#/definitions/pipeline_v1/Resource"
               }
             },
             "$schema": "http://json-schema.org/draft-07/schema#"
@@ -3769,6 +3933,7 @@ const schema: Record<string, any> = {
             "title": "BuildIntelligenceV1",
             "description": "Build intelligence configuration for test optimization.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "enabled": {
                 "description": "Whether build intelligence is enabled. Supports expressions.",
@@ -3780,6 +3945,49 @@ const schema: Record<string, any> = {
                     "$ref": "#/definitions/pipeline_v1/common/Expression"
                   }
                 ]
+              },
+              "port": {
+                "description": "Build intelligence cache service port. Supports expressions.",
+                "type": "string"
+              },
+              "maven-url": {
+                "description": "Maven repository URL used by build intelligence. Supports expressions.",
+                "type": "string"
+              },
+              "connector": {
+                "description": "Build intelligence storage connector. Supports expressions.",
+                "type": "string"
+              },
+              "region": {
+                "description": "Build intelligence storage region. Supports expressions.",
+                "type": "string"
+              },
+              "bucket_name": {
+                "description": "Build intelligence storage bucket name. Supports expressions.",
+                "type": "string"
+              },
+              "container_name": {
+                "description": "Build intelligence storage container name. Supports expressions.",
+                "type": "string"
+              },
+              "storage_account": {
+                "description": "Build intelligence storage account name. Supports expressions.",
+                "type": "string"
+              },
+              "user": {
+                "description": "User ID to run build intelligence containers as. Supports expressions.",
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "resources": {
+                "description": "Build intelligence container resource limits and requests.",
+                "$ref": "#/definitions/pipeline_v1/Resource"
               }
             },
             "$schema": "http://json-schema.org/draft-07/schema#"
@@ -3851,6 +4059,7 @@ const schema: Record<string, any> = {
             "title": "PipelineStageOutputs",
             "description": "Output configuration for pipeline stage.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "name",
               "value"
@@ -3872,6 +4081,7 @@ const schema: Record<string, any> = {
             "title": "DynamicStageNodeV1",
             "description": "Dynamic stage node for executing child pipelines from inline or remote sources.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "dynamic"
             ],
@@ -3892,16 +4102,13 @@ const schema: Record<string, any> = {
                 "description": "Conditional execution expression. Stage is skipped if condition resolves to false.",
                 "type": "string"
               },
-              "variables": {
-                "description": "Stage-level variables.",
-                "$ref": "#/definitions/pipeline_v1/common/NGVariableV1Wrapper"
-              },
               "on-failure": {
                 "$ref": "#/definitions/pipeline_v1/common/OnFailure"
               },
               "dynamic": {
                 "description": "Dynamic stage configuration.",
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "source": {
                     "description": "Base64 encoded inline child pipeline YAML.",
@@ -3913,6 +4120,7 @@ const schema: Record<string, any> = {
                   "source-config": {
                     "description": "Remote source configuration for child pipeline.",
                     "type": "object",
+                    "additionalProperties": false,
                     "required": [
                       "uses",
                       "with"
@@ -3928,6 +4136,7 @@ const schema: Record<string, any> = {
                       "with": {
                         "description": "Git source configuration.",
                         "type": "object",
+                        "additionalProperties": false,
                         "required": [
                           "repo",
                           "path"
@@ -3978,6 +4187,7 @@ const schema: Record<string, any> = {
             "title": "ParallelStages",
             "description": "Parallel stages execution configuration.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "parallel"
             ],
@@ -3985,6 +4195,7 @@ const schema: Record<string, any> = {
               "parallel": {
                 "description": "Stages to execute in parallel.",
                 "type": "object",
+                "additionalProperties": false,
                 "required": [
                   "stages"
                 ],
@@ -4005,6 +4216,7 @@ const schema: Record<string, any> = {
             "title": "GroupStages",
             "description": "Group of stages executed sequentially.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "group"
             ],
@@ -4012,6 +4224,7 @@ const schema: Record<string, any> = {
               "group": {
                 "description": "Group configuration.",
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "id": {
                     "description": "Unique identifier for the group.",
@@ -4152,6 +4365,11 @@ const schema: Record<string, any> = {
                 {
                   "required": [
                     "sto"
+                  ]
+                },
+                {
+                  "required": [
+                    "ai-eval"
                   ]
                 }
               ]
@@ -4319,6 +4537,11 @@ const schema: Record<string, any> = {
                         "required": [
                           "sto"
                         ]
+                      },
+                      {
+                        "required": [
+                          "ai-eval"
+                        ]
                       }
                     ]
                   },
@@ -4339,6 +4562,7 @@ const schema: Record<string, any> = {
             "title": "StepNodeV1",
             "description": "Unified step node for CI/CD pipelines.",
             "type": "object",
+            "additionalProperties": false,
             "anyOf": [
               {
                 "required": [
@@ -4364,13 +4588,17 @@ const schema: Record<string, any> = {
             "properties": {
               "id": {
                 "description": "Unique identifier for the step.",
-                "type": "string"
+                "type": "string",
+                "pattern": "^[a-zA-Z_][0-9a-zA-Z_$]{0,127}$"
               },
               "name": {
                 "description": "Display name of the step.",
-                "type": "string"
+                "type": "string",
+                "pattern": "^[a-zA-Z_][0-9a-zA-Z-_ ]{0,127}$",
+                "minLength": 1,
+                "maxLength": 128
               },
-              "desc": {
+              "description": {
                 "description": "Description of the step.",
                 "type": "string"
               },
@@ -4452,6 +4680,7 @@ const schema: Record<string, any> = {
             "title": "PolicyConfig",
             "description": "Policy enforcement configuration.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "policySets": {
                 "description": "Policy sets to enforce.",
@@ -4467,6 +4696,7 @@ const schema: Record<string, any> = {
             "title": "RunStepInfoV1",
             "description": "Run step configuration for executing scripts.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "shell": {
                 "description": "Shell type to use. Supports expressions.",
@@ -4474,6 +4704,14 @@ const schema: Record<string, any> = {
               },
               "script": {
                 "description": "Script to execute. Supports expressions.",
+                "type": "string"
+              },
+              "uses": {
+                "description": "Plugin identifier registered with VMS. Supports expressions.",
+                "type": "string"
+              },
+              "version": {
+                "description": "Optional plugin version pin. Unset lets VMS resolve. Supports expressions.",
                 "type": "string"
               },
               "container": {
@@ -4515,6 +4753,7 @@ const schema: Record<string, any> = {
                 "oneOf": [
                   {
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
                       "source": {
                         "description": "Source URL to download from.",
@@ -4531,6 +4770,13 @@ const schema: Record<string, any> = {
                       "fallback": {
                         "description": "Fallback URL if primary source fails.",
                         "type": "string"
+                      },
+                      "entrypoint": {
+                        "description": "Entrypoint command and arguments for the downloaded binary.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
@@ -4542,6 +4788,7 @@ const schema: Record<string, any> = {
               "output-alias": {
                 "description": "Output alias configuration for exporting variables.",
                 "type": "object",
+                "additionalProperties": false,
                 "required": [
                   "key",
                   "scope"
@@ -4569,6 +4816,7 @@ const schema: Record<string, any> = {
             "title": "Container",
             "description": "Container configuration for step execution.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "image": {
                 "description": "Container image to use. Supports expressions.",
@@ -4810,6 +5058,7 @@ const schema: Record<string, any> = {
             "title": "RunTestsStepInfoV1",
             "description": "Run tests step configuration for test intelligence.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "shell": {
                 "description": "Shell type to use. Supports expressions.",
@@ -4863,6 +5112,7 @@ const schema: Record<string, any> = {
               "intelligence": {
                 "description": "Test intelligence configuration.",
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "disabled": {
                     "description": "Whether test intelligence is disabled. Supports expressions.",
@@ -4925,7 +5175,7 @@ const schema: Record<string, any> = {
                 "description": "Display name of the step.",
                 "type": "string"
               },
-              "desc": {
+              "description": {
                 "description": "Description of the step.",
                 "type": "string"
               },
@@ -5149,6 +5399,56 @@ const schema: Record<string, any> = {
                         "oneOf": [
                           {
                             "type": "string"
+                          },
+                          {
+                            "$ref": "#/definitions/pipeline_v1/common/Expression"
+                          }
+                        ]
+                      },
+                      "user-groups": {
+                        "description": "User groups for approval when the advisory decision requires gating. Supports single value or array. Supports expressions.",
+                        "oneOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "$ref": "#/definitions/pipeline_v1/common/Expression"
+                          }
+                        ]
+                      },
+                      "service-accounts": {
+                        "description": "Service accounts for approval when the advisory decision requires gating. Supports single value or array. Supports expressions.",
+                        "oneOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "$ref": "#/definitions/pipeline_v1/common/Expression"
+                          }
+                        ]
+                      },
+                      "approvers-min-count": {
+                        "description": "Minimum number of approvers required when the advisory decision requires gating. Supports expressions.",
+                        "oneOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "block-executor": {
+                        "description": "Block pipeline executor from approving when the advisory decision requires gating. Supports expressions.",
+                        "oneOf": [
+                          {
+                            "type": "boolean"
                           },
                           {
                             "$ref": "#/definitions/pipeline_v1/common/Expression"
@@ -5571,12 +5871,14 @@ const schema: Record<string, any> = {
             "title": "ParallelSteps",
             "description": "Defines a list of steps to be executed in parallel.",
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "parallel"
             ],
             "properties": {
               "parallel": {
                 "type": "object",
+                "additionalProperties": false,
                 "required": [
                   "steps"
                 ],
@@ -5615,7 +5917,7 @@ const schema: Record<string, any> = {
                     "type": "string",
                     "description": "Display name of the step group."
                   },
-                  "desc": {
+                  "description": {
                     "type": "string",
                     "description": "Description of the step group."
                   },
